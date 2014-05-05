@@ -40,6 +40,7 @@
 	"str"
 	"like"
 	"regex"
+	"ON"
 	"on"
 	"errorcode"
 	"errormsg"
@@ -65,7 +66,9 @@
 	"count"
 	"sum"
 	"order_desc"
-	"order_asc"))
+	"order_asc"
+	"INPUT"
+	"OUTPUT"))
 
 ;; The set of possible session variables is taken from the Wiki
 ;; "Attributes" page at https://wiki.irods.org/index.php/Attributes.
@@ -504,12 +507,41 @@
 	(,irods-functions-regexp . font-lock-function-name-face)
 	(,irods-keywords-regexp . font-lock-keyword-face)))
 
+;; Commenting is based on the example given by Xah Lee "Emacs Lisp:
+;; Implementing Comment Handling in a Major Mode," 2008-11-30, online:
+;; http://ergoemacs.org/emacs/elisp_comment_handling.html
+
+(defun irods-comment-dwim (arg)
+  "Comment or uncomment current line or region in a smart
+way. For detail, see `comment-dwim'."
+  (interactive "*P")
+  (require 'newcomment)
+  (let (
+	(comment-start "#") (comment-end "")
+	)
+    (comment-dwim arg)))
+
+(defvar irods-syntax-table nil "Syntax table for `irods-mode'.")
+(setq irods-syntax-table
+      (let ((synTable (make-syntax-table)))
+	
+	;; bash style comment: "# ..."
+	(modify-syntax-entry ?# "< b" synTable)
+	(modify-syntax-entry ?\n "> b" synTable)
+
+	synTable))
+
 (define-derived-mode irods-mode fundamental-mode
   "irods-mode"
   "Major mode for editing iRODS Rules."
+  :syntax-table irods-syntax-table
 
   ;; Code for syntax highlighting
   (setq font-lock-defaults '((irods-font-lock-keywords)))
+  (setq mode-name "iRODS")
+
+  ;; modify the keymap
+  (define-key irods-mode-map [remap comment-dwim] 'irods-comment-dwim)
 
   ;; Clear memory
   (setq irods-keywords-regexp nil)
@@ -518,3 +550,5 @@
   (setq irods-functions-regexp nil))
 
 (provide 'irods-mode)
+(add-to-list 'auto-mode-alist '("\\.r\\'" . irods-mode))
+(add-to-list 'auto-mode-alist '("\\.re\\'" . irods-mode))

@@ -44,6 +44,7 @@
 	"on"
 	"errorcode"
 	"errormsg"
+	"cut"
 	"fail"
 	"failmsg"
 	"list"
@@ -63,6 +64,7 @@
 	"while"
 	"SELECT"
 	"WHERE"
+	"AND"
 	"count"
 	"sum"
 	"order_desc"
@@ -156,8 +158,8 @@
 	"acPostProcForRmColl"
 	"acPreProcForModifyUser"
 	"acPostProcForModifyUser"
-	"acPreProcForModifyAVUmetadata"
-	"acPostProcForModifyAVUmetadata"
+	"acPreProcForModifyAVUMetadata"
+	"acPostProcForModifyAVUMetadata"
 	"acPreProcForCreateUser"
 	"acPostProcForCreateUser"
 	"acPreProcForDeleteUser"
@@ -505,7 +507,8 @@
       `((,irods-events-regexp . font-lock-builtin-face)
 	(,irods-sessionvars-regexp . font-lock-constant-face)
 	(,irods-functions-regexp . font-lock-function-name-face)
-	(,irods-keywords-regexp . font-lock-keyword-face)))
+	(,irods-keywords-regexp . font-lock-keyword-face)
+	(,"\\*[a-zA-Z_][a-zA-Z0-9_]*" . font-lock-variable-name-face)))
 
 ;; Commenting is based on the example given by Xah Lee "Emacs Lisp:
 ;; Implementing Comment Handling in a Major Mode," 2008-11-30, online:

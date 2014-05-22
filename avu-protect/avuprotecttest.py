@@ -2,99 +2,128 @@
 given prefix.
 """
 
+import ConfigParser
 import subprocess
 import unittest
 
 class AVUProtectTest(unittest.TestCase): #pylint: disable=R0904
     """Test Suite based on the unittest framework."""
 
-    expcoll = ""
-    testfile = ""
-    attrprefix = "" # For example "http://testzone01/irods#"
-    f = expcoll + "/" + testfile
+    def __init__(self, *args, **kwargs):
+        """Read configuration."""
+
+        super(AVUProtectTest, self).__init__(*args, **kwargs)
+        
+        config = ConfigParser.RawConfigParser()
+        config.read('avuprotecttest.cfg')
+        self.rodspw = config.get('AVUProtectTest', 'admin_password')
+        self.expcoll = config.get('AVUProtectTest', 'expcoll')
+        self.testfile = config.get('AVUProtectTest', 'testfile')
+        self.attrprefix = config.get('AVUProtectTest', 'attrprefix')
+        self.fpath = self.expcoll + "/" + self.testfile
 
     def listavus(self):
         """Print the AVUs for the test file."""
-        ret = subprocess.call("imeta ls -d '" + self.f + "'", shell=True)
+        ret = subprocess.call("imeta ls -d '" + self.fpath + "'", shell=True)
         self.assertEqual(ret, 0)
 
     def setUp(self): #pylint: disable=C0103
         """Setup done before each test is called."""
 
-        if (self.expcoll == "" or 
+        if (self.rodspw == "" or
+            self.expcoll == "" or 
             self.testfile == "" or 
             self.attrprefix == ""):
-            print ("Edit source to specify collection, "
+            print ("Edit avuprotesttest.cfg to specify collection, "
                    "temporary filename, "
                    "and attribute name prefix to use for testing.")
             exit()
 
-#        ret = subprocess.call("ienv")
-#        self.assertEqual(ret, 0)
-#        ret = subprocess.call(["touch", self.testfile])
-#        self.assertEqual(ret, 0)
-#        ret = subprocess.call(["iput", self.testfile, self.expcoll])
-#        self.assertEqual(ret, 0)
+        ret = subprocess.call("touch '" + self.testfile + "'", shell=True)
+        self.assertEqual(ret, 0)
+        ret = subprocess.call("iput '" 
+                              + self.testfile + "' '" 
+                              + self.expcoll + "'", 
+                              shell=True)
+        self.assertEqual(ret, 0)
 
     def tearDown(self): #pylint: disable=C0103
         """Cleanup done aftr each test is called."""
 
-#        ret = subprocess.call(["rm", self.testfile])
-#        self.assertEqual(ret, 0)
-#        ret = subprocess.call(["irm", self.f])
-#        self.assertEqual(ret, 0)
-        pass
+        ret = subprocess.call(["rm", self.testfile])
+        self.assertEqual(ret, 0)
+        ret = subprocess.call("irm -f '" + self.fpath + "'", shell=True)
+        self.assertEqual(ret, 0)
 
     def test_01_disallow_add_nonadmin(self):
         """Do not allow non-admin users to add protected AVU."""
 
         ret = subprocess.call("imeta add -d '" 
-                              + self.f 
+                              + self.fpath 
                               + "' '" + self.attrprefix + "archive' 'true'",
                               shell=True)
         self.assertEqual(ret, 4)
-        self.listavus()
 
     def test_02_allow_add_nonadmin(self):
         """Confirm non-protected AVUs can be added."""
 
         ret = subprocess.call("imeta add -d '" 
-                              + self.f 
+                              + self.fpath 
                               + "' 'T2T3' 'nonadmin'", 
                               shell=True)
         self.assertEqual(ret, 0)
-        self.listavus()
 
     def test_03_allow_rm_nonadmin(self):
         """Confirm non-protected AVUs can be removed."""
 
-        ret = subprocess.call("imeta rm -d '" 
-                              + self.f 
+        ret = subprocess.call("imeta add -d '" 
+                              + self.fpath 
                               + "' 'T2T3' 'nonadmin'", 
                               shell=True)
         self.assertEqual(ret, 0)
-        self.listavus()
+
+        ret = subprocess.call("imeta rm -d '" 
+                              + self.fpath 
+                              + "' 'T2T3' 'nonadmin'", 
+                              shell=True)
+        self.assertEqual(ret, 0)
 
     def test_04_allow_mod_nonadmin(self):
         """Confirm non-protected AVUs can be modified."""
 
         ret = subprocess.call("imeta add -d '" 
-                              + self.f 
+                              + self.fpath 
                               + "' 'T4-1' 'nonadmin'", 
                               shell=True)
         self.assertEqual(ret, 0)
-        self.listavus()
 
         ret = subprocess.call("imeta mod -d '" 
-                              + self.f 
+                              + self.fpath 
                               + "' 'T4-1' 'nonadmin' 'n:T4-2' 'v:nonadmin-2'",
                               shell=True)
         self.assertEqual(ret, 0)
-        self.listavus()
 
         ret = subprocess.call("imeta rm -d '" 
-                              + self.f 
+                              + self.fpath 
                               + "' 'T4-2' 'nonadmin-2'",
+                              shell=True)
+        self.assertEqual(ret, 0)
+
+    def test_05_allow_add_admin(self):
+        """Confirm an admin can still add protected AVUs."""
+
+        ret = subprocess.call("ichmod write rods '" 
+                              + self.fpath 
+                              + "'", 
+                              shell=True)
+        self.assertEqual(ret, 0)
+
+        ret = subprocess.call("export irodsUserName='rods'; "
+                              + "export irodsAuthScheme='password'; "
+                              + "echo '" + self.rodspw + "' | iinit ; "
+                              + "imeta add -d '"
+                              + self.fpath
+                              + "' '" + self.attrprefix + "archive' 'true'",
                               shell=True)
         self.assertEqual(ret, 0)
         self.listavus()

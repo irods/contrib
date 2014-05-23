@@ -7,7 +7,7 @@ import subprocess
 import unittest
 
 class AVUProtectTest(unittest.TestCase): #pylint: disable=R0904
-    """Test Suite based on the unittest framework."""
+    """Test suite based on the unittest framework."""
 
     def __init__(self, *args, **kwargs):
         """Read configuration."""
@@ -25,6 +25,11 @@ class AVUProtectTest(unittest.TestCase): #pylint: disable=R0904
     def listavus(self):
         """Print the AVUs for the test file."""
         ret = subprocess.call("imeta ls -d '" + self.fpath + "'", shell=True)
+        self.assertEqual(ret, 0)
+
+    def listfiles(self):
+        """Print the list of files in the collection."""
+        ret = subprocess.call("ils '" + self.expcoll + "'", shell=True)
         self.assertEqual(ret, 0)
 
     def setUp(self): #pylint: disable=C0103
@@ -76,11 +81,15 @@ class AVUProtectTest(unittest.TestCase): #pylint: disable=R0904
     def test_03_allow_rm_nonadmin(self):
         """Confirm non-protected AVUs can be removed."""
 
+        # Add the non-protected AVU.
+
         ret = subprocess.call("imeta add -d '" 
                               + self.fpath 
                               + "' 'T2T3' 'nonadmin'", 
                               shell=True)
         self.assertEqual(ret, 0)
+
+        # Remove the non-protected AVU.
 
         ret = subprocess.call("imeta rm -d '" 
                               + self.fpath 
@@ -91,17 +100,23 @@ class AVUProtectTest(unittest.TestCase): #pylint: disable=R0904
     def test_04_allow_mod_nonadmin(self):
         """Confirm non-protected AVUs can be modified."""
 
+        # Add the non-protected AVU.
+
         ret = subprocess.call("imeta add -d '" 
                               + self.fpath 
                               + "' 'T4-1' 'nonadmin'", 
                               shell=True)
         self.assertEqual(ret, 0)
 
+        # Modify the non-protected AVU.
+
         ret = subprocess.call("imeta mod -d '" 
                               + self.fpath 
                               + "' 'T4-1' 'nonadmin' 'n:T4-2' 'v:nonadmin-2'",
                               shell=True)
         self.assertEqual(ret, 0)
+
+        # Remove the non-protected AVU.
 
         ret = subprocess.call("imeta rm -d '" 
                               + self.fpath 
@@ -112,16 +127,72 @@ class AVUProtectTest(unittest.TestCase): #pylint: disable=R0904
     def test_05_allow_add_admin(self):
         """Confirm an admin can still add protected AVUs."""
 
+        # Grant admin write permission on the test file.
+
         ret = subprocess.call("ichmod write rods '" 
                               + self.fpath 
                               + "'", 
                               shell=True)
         self.assertEqual(ret, 0)
 
+        # Add the protected AVU.
+
         ret = subprocess.call("export irodsUserName='rods'; "
                               + "export irodsAuthScheme='password'; "
                               + "echo '" + self.rodspw + "' | iinit ; "
                               + "imeta add -d '"
+                              + self.fpath
+                              + "' '" + self.attrprefix + "archive' 'true'",
+                              shell=True)
+        self.assertEqual(ret, 0)
+        self.listavus()
+
+        # Remove the protected AVU.
+
+        ret = subprocess.call("export irodsUserName='rods'; "
+                              + "export irodsAuthScheme='password'; "
+                              + "echo '" + self.rodspw + "' | iinit ; "
+                              + "imeta rm -d '"
+                              + self.fpath
+                              + "' '" + self.attrprefix + "archive' 'true'",
+                              shell=True)
+        self.assertEqual(ret, 0)
+
+    def test_06_disallow_del_archive(self):
+        """Prevent deletion of data objects having the archive AVU set."""
+
+        # Grant admin write permission on the test file.
+
+        ret = subprocess.call("ichmod write rods '" 
+                              + self.fpath 
+                              + "'", 
+                              shell=True)
+        self.assertEqual(ret, 0)
+
+        # Add the protected AVU with archive set to true.
+
+        ret = subprocess.call("export irodsUserName='rods'; "
+                              + "export irodsAuthScheme='password'; "
+                              + "echo '" + self.rodspw + "' | iinit ; "
+                              + "imeta add -d '"
+                              + self.fpath
+                              + "' '" + self.attrprefix + "archive' 'true'",
+                              shell=True)
+        self.assertEqual(ret, 0)
+        self.listavus()
+        
+        # Verify that removal fails.
+
+        ret = subprocess.call("irm -f '" + self.fpath + "'", shell=True)
+        self.assertEqual(ret, 3)
+        self.listfiles()
+
+        # Remove the protected archive attribute.
+
+        ret = subprocess.call("export irodsUserName='rods'; "
+                              + "export irodsAuthScheme='password'; "
+                              + "echo '" + self.rodspw + "' | iinit ; "
+                              + "imeta rm -d '"
                               + self.fpath
                               + "' '" + self.attrprefix + "archive' 'true'",
                               shell=True)

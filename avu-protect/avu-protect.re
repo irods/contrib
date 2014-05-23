@@ -146,6 +146,5 @@ acPreProcForModifyAVUMetadata(*Option,
 
     # fail to prevent iRODS from also copying the protected metadata
     cut;
-    failmsg(0, "SUCCESS:  Successfully copied the unprotected metadata.");
   }
 }

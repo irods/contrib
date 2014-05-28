@@ -1,0 +1,14 @@
+[AVUProtectTest]
+
+# Password for the rods administrative account.
+admin_password: 
+
+# Collection to use for testing.
+expcoll: 
+
+# File to use for testing. For example "test.txt"
+testfile: 
+
+# Attribute name prefix to designated protected attributes. For
+# example "http://testzone01/irods#"
+attrprefix: 

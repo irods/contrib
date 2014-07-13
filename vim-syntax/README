@@ -1,0 +1,5 @@
+Syntax detection for iRODS rule language in vim
+
+Copy the accompanying .vim directory contents into your
+environment-appropriate vim directory ( normally $HOME/.vim/ ).
+This should complete the installation process.

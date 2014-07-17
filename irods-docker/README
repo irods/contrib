@@ -1,0 +1,25 @@
+This set of files can be used to create a Docker image of a standalone iRODS iCAT server
+or an iCAT server paired with the idrop-web2 web-based graphical client.
+
+To create and instantiate the server, use the following instructions.
+
+1. Locate the files in a single directory (known below as "path")..
+2. Rename the Dockerfile you would like to use (Dockerfile.icat or 
+   Dockerfile.idrop) to Dockerfile.
+3. Run "docker build -t [repo/tag] [path]"
+4. Use "docker run -t [repo/tag]" to start the docker image.
+
+Note: I usually specify the hostnames and the redirect ports at startup.
+ "docker run -h [hostname] -p [ssh redirect]:22 \
+  [irods redirect]:1247 -d -t [repo/tag]"
+
+For idrop-web, we have some special environment variables that get loaded
+into the idrop config file. E.g.,
+ "docker run -h idrop-web1 -e "port80=8580" -e "port8443=8543" \
+  -e "hostsname=$HOSTNAME" -p 8522:22 -p 8547:1247 -p 8543:8443 \
+  -p 8580:80 -d beppodb/idrop-web"
+
+Once running...
+* You can ssh to the box with "ssh -p [ssh redirect] admin@localhost"
+* The admin password is "admin"
+* rods is the only iRODS user, with password "rods"

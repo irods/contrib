@@ -26,18 +26,15 @@ RUN chown admin:admin /home/admin
 RUN chsh -s /bin/bash admin
 
 #install iRODS
-RUN wget -P /home/admin ftp://ftp.renci.org/pub/irods/releases/4.0.2/irods-database-plugin-postgres-1.2.deb
-RUN wget -P /home/admin ftp://ftp.renci.org/pub/irods/releases/4.0.2/irods-icat-4.0.2-64bit.deb
+RUN wget -P /home/admin ftp://ftp.renci.org/pub/irods/releases/4.0.3/irods-database-plugin-postgres-1.3.deb
+RUN wget -P /home/admin ftp://ftp.renci.org/pub/irods/releases/4.0.3/irods-icat-4.0.3-64bit.deb
 
 # install package dependencies to prevent Docker build from erring out
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y `dpkg -I /home/admin/irods-icat-4.0.2-64bit.deb | sed -n 's/^ Depends: //p' | sed 's/,//g'`
-RUN dpkg -i /home/admin/irods-icat-4.0.2-64bit.deb
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y `dpkg -I /home/admin/irods-icat-4.0.3-64bit.deb | sed -n 's/^ Depends: //p' | sed 's/,//g'`
+RUN dpkg -i /home/admin/irods-icat-4.0.3-64bit.deb
 
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y `dpkg -I /home/admin/irods-database-plugin-postgres-1.2.deb | sed -n 's/^ Depends: //p' | sed 's/,//g'`
-RUN dpkg -i /home/admin/irods-database-plugin-postgres-1.2.deb
-
-# irods needs to be part of admin to execute supervisorctl
-RUN usermod -G admin -a irods
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y `dpkg -I /home/admin/irods-database-plugin-postgres-1.3.deb | sed -n 's/^ Depends: //p' | sed 's/,//g'`
+RUN dpkg -i /home/admin/irods-database-plugin-postgres-1.3.deb
 
 # set up the iCAT database
 RUN service postgresql start && \
@@ -51,7 +48,10 @@ RUN chmod a+x /home/admin/server.sh
 #irods setup_database
 ADD ./icat/dbresp /home/admin/dbresp
 RUN service postgresql start && \ 
-  sudo su -c "/var/lib/irods/packaging/setup_database.sh </home/admin/dbresp" irods
+  sudo su -c "/var/lib/irods/packaging/setup_irods.sh </home/admin/dbresp"
+
+# irods needs to be part of admin to execute supervisorctl
+RUN usermod -G admin -a irods
 
 #change irods user's irodsEnv file to point to localhost, since it was configured with a transient Docker container's hostname
 RUN sed -i 's/^irodsHost.*/irodsHost localhost/' /var/lib/irods/.irods/.irodsEnv

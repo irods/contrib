@@ -12,7 +12,7 @@
  */
 environments {
 	
-	 production {  grails.serverURL = "https://localhost:8551/idrop-web2" } 
+	 production {  grails.serverURL = "http://localhost:8551/idrop-web2" } 
 	 
 }
 
@@ -22,8 +22,8 @@ environments {
  */
  idrop.config.preset.host="localhost"
  idrop.config.preset.port="1247"
- idrop.config.preset.zone="tempZone"
  idrop.config.preset.resource=""
+ idrop.config.preset.zone="tempZone"
  // can be Standard or PAM right now
  idrop.config.preset.authScheme="Standard"
 
@@ -42,7 +42,7 @@ environments {
  */
 
 idrop.config.idrop.lite.applet.jar="idrop-lite-2.0.1-SNAPSHOT-jar-with-dependencies.jar"
-idrop.config.idrop.lite.codebase="http://localhost:8552/idrop-release"
+idrop.config.idrop.lite.codebase="http://people.renci.org/~danb/FOR_DEMOS/iDrop-Web-2"
 idrop.config.idrop.lite.use.applet.dir=false
 
 /*
@@ -56,7 +56,8 @@ idrop.config.idrop.lite.use.applet.dir=false
 
 //idrop.config.idrop.jnlp="http://iren-web.renci.org:8080/idrop/idrop.jnlp"
 //drop.config.idrop.jnlp="http://iren-web.renci.org/idrop-snapshot/idrop.jnlp"
-idrop.config.idrop.jnlp="http://localhost:8552/idrop-release/idrop.jnlp"
+idrop.config.idrop.jnlp="http://people.renci.org/~danb/FOR_DEMOS/iDrop-Web-2/idrop.jnlp"
+
 /*
  * 5) Customization properties
  */

@@ -1,0 +1,10 @@
+<VirtualHost *:80>
+  <Proxy *>
+        Order deny,allow
+        Allow from all
+  </Proxy>
+
+  ProxyRequests           Off
+  ProxyPass               /       ajp://localhost:8009/
+  ProxyPassReverse        /       ajp://localhost:8009/
+</VirtualHost>

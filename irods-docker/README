@@ -1,25 +1,31 @@
 This set of files can be used to create a Docker image of a standalone iRODS iCAT server
-or an iCAT server paired with the idrop-web2 web-based graphical client.
+or an iCAT server paired with the iDrop Web 2 web-based graphical client.
 
 To create and instantiate the server, use the following instructions.
 
 1. Locate the files in a single directory (known below as "path")..
-2. Rename the Dockerfile you would like to use (Dockerfile.icat or 
-   Dockerfile.idrop) to Dockerfile.
-3. Run "docker build -t [repo/tag] [path]"
-4. Use "docker run -t [repo/tag]" to start the docker image.
+2. Build the image you will need:
+   - "docker build -t [repo]/icat:4.0.3 [path]/icat"
+   - "docker build -t [repo]/idrop-web2:4.0.3 [path]/idrop-web2"
+3. Use "docker run -t [repo/tag]" to start the docker image.
 
-Note: I usually specify the hostnames and the redirect ports at startup.
- "docker run -h [hostname] -p [ssh redirect]:22 \
-  [irods redirect]:1247 -d -t [repo/tag]"
+Notes:
+* The iCAT image exposes port 1247 for iRODS.
+* iRODS and Postgres passwords are randomly generated at runtime. You may specify an iRODS
+  rodsadmin password as a command line argument to "docker run".
+* These images do include supervisord or sshd. To access a terminal use "docker exec"
+  e.g., "docker exec -ti [container-id] /bin/bash"
+* The iDrop Web 2 image exposes ports 80 and 1247.
+* The iDrop Web 2 image uses a script to update the URL of iDrop Web links. The URL stub
+  will be of the form http://[$DOCKER_HOSTNAME]:[$DOCKER_PORT80]. You must specify
+  these variables on the "docker run" commandline.
 
-For idrop-web, we have some special environment variables that get loaded
-into the idrop config file. E.g.,
- "docker run -h idrop-web1 -e "port80=8580" -e "port8443=8543" \
-  -e "hostsname=$HOSTNAME" -p 8522:22 -p 8547:1247 -p 8543:8443 \
-  -p 8580:80 -d beppodb/idrop-web"
+Example syntax:
 
-Once running...
-* You can ssh to the box with "ssh -p [ssh redirect] admin@localhost"
-* The admin password is "admin"
-* rods is the only iRODS user, with password "rods"
+iCAT only-
+  docker run -p [port 1247 redirect]:1247 -d -t irods/icat:4.0.3 [new rodsadmin password]
+
+iCAT + iDrop Web 2-
+  docker run -p [port 1247 redirect]:1247 -p [port 80 redirect]:80 \
+  -e DOCKER_PORT80=[port 80 redirect] -e DOCKER_HOSTNAME=[hostname of the host machine] \
+  -d -t irods/idrop-web2:4.0.3 [new rodsadmin password]

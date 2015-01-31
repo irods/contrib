@@ -1,5 +1,6 @@
-This set of files can be used to create a Docker image of a standalone iRODS iCAT server
-or an iCAT server paired with the iDrop Web 2 web-based graphical client.
+This set of files can be used to create a Docker image of a standalone iRODS iCAT server,
+ an iCAT server paired with the iDrop Web 2 web-based graphical client, or a standalone
+ iRODS client with iCommands installed.
 
 To create and instantiate the server, use the following instructions.
 
@@ -7,6 +8,7 @@ To create and instantiate the server, use the following instructions.
 2. Build the image you will need:
    - "docker build -t [repo]/icat:4.0.3 [path]/icat"
    - "docker build -t [repo]/idrop-web2:4.0.3 [path]/idrop-web2"
+   - "docker build -t [repo]/icommands:4.0.3 [path]/icommands"
 3. Use "docker run -t [repo/tag]" to start the docker image.
 
 Notes:
@@ -22,10 +24,13 @@ Notes:
 
 Example syntax:
 
-iCAT only-
+iCAT only (loaded as background process)-
   docker run -p [port 1247 redirect]:1247 -d -t irods/icat:4.0.3 [new rodsadmin password]
 
-iCAT + iDrop Web 2-
+iCAT + iDrop Web 2 (loaded as background process)-
   docker run -p [port 1247 redirect]:1247 -p [port 80 redirect]:80 \
   -e DOCKER_PORT80=[port 80 redirect] -e DOCKER_HOSTNAME=[hostname of the host machine] \
   -d -t irods/idrop-web2:4.0.3 [new rodsadmin password]
+
+iCommands (loaded as foreground process)-
+  docker run -ti irods/icommands:4.0.3

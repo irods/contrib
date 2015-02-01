@@ -15,7 +15,7 @@ Notes:
 * The iCAT image exposes port 1247 for iRODS.
 * iRODS and Postgres passwords are randomly generated at runtime. You may specify an iRODS
   rodsadmin password as a command line argument to "docker run".
-* These images do include supervisord or sshd. To access a terminal use "docker exec"
+* These images do not include supervisord or sshd. To access a terminal use "docker exec"
   e.g., "docker exec -ti [container-id] /bin/bash"
 * The iDrop Web 2 image exposes ports 80 and 1247.
 * The iDrop Web 2 image uses a script to update the URL of iDrop Web links. The URL stub

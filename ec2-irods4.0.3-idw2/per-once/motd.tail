@@ -1,0 +1,40 @@
+This instance has irods-aws installed.
+
+irods-aws is a reference installation of iRODS and iDrop Web 2 on
+Amazon's Elastic Compute Cloud (EC2).
+
+The source files for irods-aws are located at
+https://github.com/beppodb/irods-aws
+
+The default iRODS installation's zone is named "tempZone".
+It has a single resource named "demoResc".
+It has a single user, the iRODS administrator, "rods".
+
+The password for rods is randomly generated. You will probably want
+to change this password.
+
+To change the iRODS password, use the following commands:
+  sudo su - irods
+  iadmin moduser rods password <new password>
+  iinit
+
+To change the name of the default zone, use the following command:
+  iadmin modzone tempZone name <new zonename>
+
+When changing the zone name, you will also need to modify the
+default zone name in:
+  /var/lib/irods/.irods/.irodsEnv
+  /etc/idrop-web/idrop-web-config.groovy
+
+The iRODS S3 resource plugin is also installed. To configure it:
+ - Create an AWS keypair file with first line equal to 
+   the S3 bucket Access Key ID and the second line equal to
+   the S3 bucket Secret Access Key.
+ - Then run the following commands under the iRODS admin account:
+   iadmin mkresc compResc compound
+   iadmin mkresc cacheResc unixfilesystem <hostname>:</full/path/to/Vault>
+   iadmin mkresc archiveResc s3 <iRODS hostname>:/<s3BucketName>/irods/Vault \
+     S3_AUTH_FILE=</full/path/to/AWS.keypair>
+   iadmin addchildtoresc compResc cacheResc cache
+   iadmin addchildtoresc compResc archiveResc archive
+

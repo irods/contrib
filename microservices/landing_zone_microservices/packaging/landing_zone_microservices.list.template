@@ -1,0 +1,116 @@
+# =-=-=-=-=-=-=-
+# EPM Variables
+# =-=-=-=-=-=-=-
+%product iRODS WOS Resource Plugin
+%copyright 2014, The University of North Carolina at Chapel Hill
+%vendor Renaissance Computing Institute <info@irods-consortium.org>
+%license LICENSE
+%readme README
+%description The integrated Rule-Oriented Data System
+%version TEMPLATE_PLUGINVERSION TEMPLATE_PLUGINVERSIONINT
+
+%if DEB
+%requires libc6
+%requires libcurl3
+%endif
+
+%if RPM
+%requires curl-devel
+%endif
+
+%if ARCH
+%else
+%endif
+
+%format all
+
+# =-=-=-=-=-=-=-
+# Install variables
+# =-=-=-=-=-=-=-
+$IRODS_HOME_DIR=/var/lib/irods
+$OS_IRODS_ACCT=irods
+
+# =-=-=-=-=-=-=-
+# preinstall
+# =-=-=-=-=-=-=-
+%preinstall << END_PREINSTALL
+
+# determine whether this is an upgrade
+if [ "$$1" -eq "$$1" ] 2>/dev/null ; then
+  # integer, therefore rpm
+  if [ $$1 -gt 1 ] ; then
+    PACKAGEUPGRADE="true"
+  else
+    PACKAGEUPGRADE="false"
+  fi
+else
+  # string, therefore deb
+  if [ "$$1" = "upgrade" ] ; then
+    PACKAGEUPGRADE="true"
+  else
+    PACKAGEUPGRADE="false"
+  fi
+fi
+
+if [ "$$PACKAGEUPGRADE" = "true" ] ; then
+  echo "NOP" > /dev/null
+else
+  echo "NOP" > /dev/null
+fi
+
+END_PREINSTALL
+
+# =-=-=-=-=-=-=-
+# post install
+# =-=-=-=-=-=-=-
+%postinstall << END_POSTINSTALL
+END_POSTINSTALL
+
+# =-=-=-=-=-=-=-
+# preremove
+# =-=-=-=-=-=-=-
+%preremove << END_PREREMOVE
+END_PREREMOVE
+
+# =-=-=-=-=-=-=-
+# post remove
+# =-=-=-=-=-=-=-
+%postremove << END_POSTREMOVE
+
+# determine whether this is an upgrade
+if [ "$$1" -eq "$$1" ] 2>/dev/null ; then
+  # integer, therefore rpm
+  if [ $$1 -gt 0 ] ; then
+    PACKAGEUPGRADE="true"
+  else
+    PACKAGEUPGRADE="false"
+  fi
+else
+  # string, therefore deb
+  if [ "$$1" = "upgrade" ] ; then
+    PACKAGEUPGRADE="true"
+  else
+    PACKAGEUPGRADE="false"
+  fi
+fi
+
+if [ "$$PACKAGEUPGRADE" = "true" ] ; then
+   echo "NOP" > /dev/null
+else
+   echo "NOP" > /dev/null
+fi
+
+END_POSTREMOVE
+
+# =-=-=-=-=-=-=-
+# Full File Listing
+# =-=-=-=-=-=-=-
+f 644 $OS_IRODS_ACCT $OS_IRODS_ACCT ${IRODS_HOME_DIR}/landing_zone.r ./landing_zone.r
+f 644 $OS_IRODS_ACCT $OS_IRODS_ACCT ${IRODS_HOME_DIR}/plugins/microservices/libmsiget_filepaths_from_glob.so ./msiget_filepaths_from_glob/libmsiget_filepaths_from_glob.so
+f 644 $OS_IRODS_ACCT $OS_IRODS_ACCT ${IRODS_HOME_DIR}/plugins/microservices/libmsiput_dataobj_or_coll.so ./msiput_dataobj_or_coll/libmsiput_dataobj_or_coll.so
+f 644 $OS_IRODS_ACCT $OS_IRODS_ACCT ${IRODS_HOME_DIR}/plugins/microservices/libmsifilesystem_rename.so ./msifilesystem_rename/libmsifilesystem_rename.so
+f 644 $OS_IRODS_ACCT $OS_IRODS_ACCT ${IRODS_HOME_DIR}/plugins/microservices/libmsiget_image_meta.so ./msiget_image_meta/libmsiget_image_meta.so
+
+
+
+

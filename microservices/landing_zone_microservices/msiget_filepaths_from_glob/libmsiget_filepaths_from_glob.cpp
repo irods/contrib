@@ -1,6 +1,7 @@
 #include "reFuncDefs.hpp"
 #include "microservice.hpp"
 #include "objInfo.hpp"
+#include "rcMisc.h"
 #include <glob.h>
 #include <boost/unordered_map.hpp>
 #include <boost/filesystem.hpp>

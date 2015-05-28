@@ -27,7 +27,7 @@
     sudo hostname $MYHOST
     sudo sh -c "echo $MYHOST > /etc/hostname"
     sudo sh -c "echo 127.0.0.1 $MYHOST localhost > /etc/hosts"
-    sudo apt-get -y install g++ libssl-dev libmagick++-dev
+    sudo apt-get -y install git tig g++ libssl-dev libmagick++-dev
     rm -rf Documents examples.desktop Music Pictures Public Templates Videos
     wget ftp://ftp.renci.org/pub/irods/training/training_jpgs.zip
     unzip training_jpgs.zip

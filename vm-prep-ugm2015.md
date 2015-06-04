@@ -32,7 +32,8 @@
     wget ftp://ftp.renci.org/pub/irods/training/training_jpgs.zip
     unzip training_jpgs.zip
     rm training_jpgs.zip
-    gsettings set org.gnome.desktop.screensaver idle-activation-enabled false
+    gsettings set org.gnome.desktop.screensaver idle-activation-enabled 'false'
+    gsettings set org.gnome.desktop.lockdown disable-lock-screen 'true'
     echo `date` > VERSION
     rm ~/.bash_history
     history -c

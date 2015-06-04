@@ -16,7 +16,13 @@
 # setup
 PROJECTNAME=irods
 REPOURL=https://github.com/irods/irods.git
-COMMITISH=master
+
+# parameter
+if [ $# -eq 1 ] ; then
+  COMMITISH=$1
+else
+  COMMITISH=master
+fi
 
 # prepare the working space
 ORIGINALPWD=$( pwd )

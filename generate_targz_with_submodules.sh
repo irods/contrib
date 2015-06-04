@@ -22,7 +22,7 @@ COMMITISH=master
 ORIGINALPWD=$( pwd )
 SCRIPTNAME=$( basename "$0" )
 TMPDIR=$( mktemp -d "/tmp/$SCRIPTNAME.XXXXXX" )
-SOURCEDIR=$TMPDIR/$PROJECTNAME
+SOURCEDIR=$TMPDIR/$PROJECTNAME-$COMMITISH
 ARCHIVEFILE=$PROJECTNAME-$COMMITISH.tar.gz
 mkdir -p $SOURCEDIR
 git clone --recursive $REPOURL $SOURCEDIR
@@ -32,7 +32,7 @@ git clean -xffd
 
 # build and gather archive
 cd $SOURCEDIR/..
-tar czf $ARCHIVEFILE --exclude .git --exclude .gitignore --exclude .gitmodules --exclude .gitattributes $PROJECTNAME
+tar czf $ARCHIVEFILE --exclude .git --exclude .gitignore --exclude .gitmodules --exclude .gitattributes $PROJECTNAME-$COMMITISH
 mv $ARCHIVEFILE $ORIGINALPWD
 
 # return, clean up, and show results

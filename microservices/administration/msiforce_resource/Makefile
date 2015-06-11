@@ -1,6 +1,6 @@
 GCC = g++
 
-INC=-I/usr/include/irods/ -I=/usr/include/irods/boost
+INC=-I/usr/include/irods/ -I/usr/include/irods/boost
 
 all: libmsiforce_resource
 

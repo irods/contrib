@@ -1,4 +1,4 @@
-FROM irods/icat:4.0.3
+FROM irods/icat:4.1.3
 MAINTAINER danb@renci.org
 
 RUN apt-get update ; apt-get upgrade -y

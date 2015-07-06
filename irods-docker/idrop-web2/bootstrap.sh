@@ -6,7 +6,7 @@ RODS_PASSWORD=$1
 
 if [ -n "$RODS_PASSWORD" ]
   then
-    sed -i "11s/.*/$RODS_PASSWORD/" /opt/irods/setup_responses
+    sed -i "14s/.*/$RODS_PASSWORD/" /opt/irods/setup_responses
 fi
 
 # set up the iCAT database

@@ -12,7 +12,7 @@ sudo apt-get update
 sudo apt-get -y install postgresql openjdk-7-jdk
 sudo update-java-alternatives -s java-1.7.0-openjdk-amd64
 sudo apt-get -y install tomcat7 apache2
-wget -O /tmp/irods-icat.deb ftp://ftp.renci.org/pub/irods/releases/${IRODS_FOLDER}/irods-icat-${IRODS_VERSION}-64bit.deb
+wget -O /tmp/irods-icat.deb ftp://ftp.renci.org/pub/irods/releases/${IRODS_FOLDER}/irods-icat-${IRODS_VERSION}.deb
 wget -O /tmp/irods-postgres.deb ftp://ftp.renci.org/pub/irods/releases/${DB_PLUGIN_FOLDER}/irods-database-plugin-postgres-${DB_PLUGIN_VERSION}.deb
 sudo dpkg -i /tmp/irods-icat.deb /tmp/irods-postgres.deb
 sudo apt-get -f -y install

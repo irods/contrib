@@ -26,7 +26,7 @@ cd /opt/irods-aws
 #./deploy.sh 4.0.3 4.0.3-64bit 4.0.3-with-v1.4-database-plugins 1.4
 
 # For 4.1.3
-./deploy.sh 4.1.3/ubuntu14 4.1.3-ubuntu14-x86_64 4.1.3-ubuntu14-x86_64 1.5-ubuntu14-x86_64
+./deploy.sh 4.1.3/ubuntu14 4.1.3-ubuntu14-x86_64 4.1.3/ubuntu14 1.5-ubuntu14-x86_64
 sudo shred -u /etc/ssh/*_key /etc/ssh/*_key.pub
 sudo shred -u /home/ubuntu/.ssh/authorized_keys
 sudo shred -u /home/ubuntu/.*history

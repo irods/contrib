@@ -27,7 +27,7 @@ sudo service tomcat7 restart
 # configure apache
 sudo cp ./ajp.conf /etc/apache2/sites-available
 sudo a2enmod proxy_ajp
-sudo a2dissite default
+sudo a2dissite 000-default
 sudo a2dissite default-ssl
 sudo a2ensite ajp
 sudo service apache2 restart

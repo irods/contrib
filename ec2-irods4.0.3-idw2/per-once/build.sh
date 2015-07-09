@@ -25,11 +25,11 @@ sudo rm -rf /var/lib/tomcat7/webapps/ROOT
 sudo wget -O /var/lib/tomcat7/webapps/ROOT.war http://people.renci.org/~danb/FOR_DEMOS/iDrop-Web-2/idrop-web2.war
 sudo service tomcat7 restart
 # configure apache
-sudo cp ./ajp.apache /etc/apache2/sites-available
+sudo cp ./ajp.conf /etc/apache2/sites-available
 sudo a2enmod proxy_ajp
 sudo a2dissite default
 sudo a2dissite default-ssl
-sudo a2ensite ajp.apache
+sudo a2ensite ajp
 sudo service apache2 restart
 # configure MOTD and cron
 sudo cp ./motd.tail /etc

@@ -1,9 +1,8 @@
 function terminate_instance() {
-    #aws ec2 terminate-instances --instance-ids $1
-    #if [ $? -eq 0 ]; then
-    #    echo Instance $1 has been terminated.
-    #fi
-    echo For test not killing instance $1
+    aws ec2 terminate-instances --instance-ids $1
+    if [ $? -eq 0 ]; then
+        echo Instance $1 has been terminated.
+    fi
 }
 
 if [ $# -lt 4 ]; then

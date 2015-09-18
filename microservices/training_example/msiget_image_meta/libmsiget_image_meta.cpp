@@ -17,64 +17,49 @@ std::string convertColorSpaceTypeToStr(const MagickCore::ColorspaceType& t);
 
 using namespace Magick;
 
-
 extern "C" {
+    // =-=-=-=-=-=-=-
+    // Returns the meta data as a string for the image.  Example:  CompressionType=JPEG%Width=10%Height=20
+    int msiget_image_meta_impl(msParam_t* _in, msParam_t* _out, ruleExecInfo_t* rei) {
+        using std::cout;
+        using std::endl;
+        using std::string;
 
-// =-=-=-=-=-=-=-
-// Returns the meta data as a string for the image.  Example:  CompressionType=JPEG%Width=10%Height=20
-int msiget_image_meta(msParam_t* _in, msParam_t* _out, ruleExecInfo_t* rei) {
+        char *filePath = parseMspForStr( _in );
+        if( !filePath ) {
+            cout << "msiget_image_meta - null filePath parameter" << endl;
+            return SYS_INVALID_INPUT_PARAM;
+        }
 
-	using std::cout;
-	using std::endl;
-	using std::string;
+        InitializeMagick((const char*)0);
 
-    char *filePath = parseMspForStr( _in );
-    if( !filePath ) {
-        cout << "msiget_image_meta - null filePath parameter" << endl;
-        return SYS_INVALID_INPUT_PARAM;
+        Image imgObj;
+        imgObj.read(filePath);
+
+        std::stringstream metaData;
+        metaData << "ImageDepth=" << imgObj.modulusDepth()
+                 << "%Width=" << imgObj.columns()
+                 << "%Height=" << imgObj.rows()
+                 << "%CompressionType=" << convertCompressTypeToStr(imgObj.compressType())
+                 << "%Format=" << imgObj.format()
+                 << "%Colorspace=" << convertColorSpaceTypeToStr(imgObj.colorSpace());
+
+        fillStrInMsParam(_out, metaData.str().c_str());
+
+        // Done
+        return 0; 
+
     }
 
-    cout << "File Path: " << filePath << endl;
-
-	InitializeMagick((const char*)0);
-
-	Image imgObj;
-	imgObj.read(filePath);
-	
-    std::stringstream metaData;
-	metaData << "ImageDepth=" << imgObj.modulusDepth() << "%Width=" << imgObj.columns()
-			<< "%Height=" << imgObj.rows() << "%CompressionType=" << convertCompressTypeToStr(imgObj.compressType())
-			<< "%Format=" << imgObj.format() << "%Colorspace=" << convertColorSpaceTypeToStr(imgObj.colorSpace());
-
-	fillStrInMsParam(_out, metaData.str().c_str());
-
-	// Done
-	return 0; 
-
-}
-
-// =-=-=-=-=-=-=-
-// 2.  Create the plugin factory function which will return a microservice
-//     table entry
-irods::ms_table_entry* plugin_factory() {
-	// =-=-=-=-=-=-=-
-	// 3.  allocate a microservice plugin which takes the number of function
-	//     params as a parameter to the constructor
-	irods::ms_table_entry* msvc = new irods::ms_table_entry(2);
-
-	// =-=-=-=-=-=-=-
-	// 4. add the microservice function as an operation to the plugin
-	//    the first param is the name / key of the operation, the second
-	//    is the name of the function which will be the microservice
-	msvc->add_operation("msiget_image_meta", "msiget_image_meta");
-
-	// =-=-=-=-=-=-=-
-	// 5. return the newly created microservice plugin
-	return msvc;
-}
+    irods::ms_table_entry* plugin_factory() {
+        irods::ms_table_entry* msvc = new irods::ms_table_entry(2);
+        
+        msvc->add_operation("msiget_image_meta", "msiget_image_meta_impl");
+        
+        return msvc;
+    }
 
 } // extern "C"
-
 
 std::string convertCompressTypeToStr(const MagickCore::CompressionType& t) {
 

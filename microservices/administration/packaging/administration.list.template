@@ -106,7 +106,7 @@ END_POSTREMOVE
 # Full File Listing
 # =-=-=-=-=-=-=-
 f 644 $OS_IRODS_ACCT $OS_IRODS_ACCT ${IRODS_HOME_DIR}/plugins/microservices/libmsiforce_resource.so ./msiforce_resource/libmsiforce_resource.so
-f 644 $OS_IRODS_ACCT $OS_IRODS_ACCT ${IRODS_HOME_DIR}/plugins/microservices/libmsisync_to_archive.so ./msisync_to_archive/libsync_to_archive.so
+f 644 $OS_IRODS_ACCT $OS_IRODS_ACCT ${IRODS_HOME_DIR}/plugins/microservices/libmsisync_to_archive.so ./msisync_to_archive/libmsisync_to_archive.so
 
 
 

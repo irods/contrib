@@ -58,6 +58,11 @@ extern "C" {
                 0,     // mode
                 0 ) ); // flags
 
+        const keyValPair_t& kvp = file_obj->cond_input();
+        addKeyVal(
+            (keyValPair_t*)&kvp,
+            ADMIN_KW,
+            "true" );
         // inform the resource that a write operation happened
         // to put it in a state where it will need to replicate
         irods::error ret = fileNotify(

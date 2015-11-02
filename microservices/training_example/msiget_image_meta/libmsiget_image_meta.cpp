@@ -18,6 +18,10 @@ std::string convertColorSpaceTypeToStr(const MagickCore::ColorspaceType& t);
 using namespace Magick;
 
 extern "C" {
+    double get_plugin_interface_version() {
+        return 1.0;
+    }
+
     // =-=-=-=-=-=-=-
     // Returns the meta data as a string for the image.  Example:  CompressionType=JPEG%Width=10%Height=20
     int msiget_image_meta_impl(msParam_t* _in, msParam_t* _out, ruleExecInfo_t* rei) {
@@ -47,15 +51,15 @@ extern "C" {
         fillStrInMsParam(_out, metaData.str().c_str());
 
         // Done
-        return 0; 
+        return 0;
 
     }
 
     irods::ms_table_entry* plugin_factory() {
         irods::ms_table_entry* msvc = new irods::ms_table_entry(2);
-        
-        msvc->add_operation("msiget_image_meta", "msiget_image_meta_impl");
-        
+
+        msvc->add_operation("msiget_image_meta_impl", "msiget_image_meta");
+
         return msvc;
     }
 

@@ -19,12 +19,21 @@ sudo dpkg -i /tmp/irods-icat.deb /tmp/irods-postgres.deb
 sudo apt-get -f -y install
 #configure tomcat
 sudo cp ./server.xml /etc/tomcat7
+
 #configure idrop-web
-sudo mkdir /etc/idrop-web
-sudo cp ./idrop-web-config2.groovy /etc/idrop-web
+#sudo mkdir /etc/idrop-web
+#sudo cp ./idrop-web-config2.groovy /etc/idrop-web
+
+# configure cloud browser
+wget -O /tmp/irods-cloud-backend.war https://code.renci.org/gf/download/frsrelease/239/2708/irods-cloud-backend.war
+wget -O /tmp/irods-cloud-frontend.zip https://code.renci.org/gf/download/frsrelease/239/2712/irods-cloud-frontend.zip
+sudo -u tomcat7 bash -c "cp /tmp/irods-cloud-backend.war /var/lib/tomcat7/webapps"
+sudo unzip /tmp/irods-cloud-frontend.zip -d /var/www/html
+sudo cp irods-cloud-backend-config.groovy /etc
+
 sudo rm -rf /var/lib/tomcat7/webapps/ROOT
-sudo wget -O /var/lib/tomcat7/webapps/ROOT.war http://people.renci.org/~danb/FOR_DEMOS/iDrop-Web-2/idrop-web2.war
 sudo service tomcat7 restart
+
 # configure apache
 sudo cp ./ajp.conf /etc/apache2/sites-available
 sudo a2enmod proxy_ajp

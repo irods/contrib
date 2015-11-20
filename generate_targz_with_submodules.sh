@@ -34,6 +34,8 @@ mkdir -p $SOURCEDIR
 git clone --recursive $REPOURL $SOURCEDIR
 cd $SOURCEDIR
 git checkout $COMMITISH
+git submodule init
+git submodule update
 git clean -xffd
 
 # build and gather archive

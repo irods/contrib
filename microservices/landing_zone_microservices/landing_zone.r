@@ -1,5 +1,5 @@
 ingest_rule {
-    #delay( "<PLUSET>30s</PLUSET><EF>5m</EF><EF>REPEAT FOR EVER</EF>" ) {
+    #delay( "<PLUSET>30s</PLUSET><EF>5m REPEAT FOR EVER</EF>" ) {
     #    remote( "resource1.example.org", "null" ) {
             *err = errorcode( msiget_filepaths_from_glob( *lz_glob, *delay_seconds, *file_age_seconds, *the_files ) );
             if( *err == 0 ) {

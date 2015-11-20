@@ -36,11 +36,11 @@ sudo rm -rf /var/lib/tomcat7/webapps/ROOT
 sudo service tomcat7 restart
 
 # configure apache
-sudo cp ./ajp.conf /etc/apache2/sites-available
-sudo a2enmod proxy_ajp
-sudo a2dissite 000-default
-sudo a2dissite default-ssl
-sudo a2ensite ajp
+#sudo cp ./ajp.conf /etc/apache2/sites-available
+#sudo a2enmod proxy_ajp
+#sudo a2dissite 000-default
+#sudo a2dissite default-ssl
+#sudo a2ensite ajp
 sudo service apache2 restart
 # configure MOTD and cron
 sudo cp ./motd.tail /etc

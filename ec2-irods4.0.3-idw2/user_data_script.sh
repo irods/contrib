@@ -6,7 +6,8 @@ mv /opt/contrib/ec2-irods4.0.3-idw2 /opt/irods-aws
 cd /opt/irods-aws
 
 # For 4.1.3
-./deploy.sh 4.1.3 4.1.3 4.1.3 1.5
+./deploy.sh 4.1.6 4.1.6 4.1.6 1.6
+sudo shred -u /root/.ssh/authorized_keys
 sudo shred -u /etc/ssh/*_key /etc/ssh/*_key.pub
 sudo shred -u /home/ubuntu/.ssh/authorized_keys
 sudo shred -u /home/ubuntu/.*history

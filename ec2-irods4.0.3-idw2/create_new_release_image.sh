@@ -49,7 +49,7 @@ fi
 
 # create image from this instance
 echo IRODS_VERSION=$IRODS_VERSION
-aws ec2 create-image --instance-id $INSTANCE_ID --name irods_${IRODS_VERSION}_with_ubuntu_14.04 --description "irods $IRODS_VERSION with iDROP Web on Ubuntu 14.04"
+aws ec2 create-image --instance-id $INSTANCE_ID --name irods_${IRODS_VERSION}_with_ubuntu_14.04 --description "irods $IRODS_VERSION with Cloud Browser on Ubuntu 14.04"
 if [ $? -eq 0 ]; then
     echo Created image irods_${IRODS_VERSION}_with_ubuntu_14.04. 
 else

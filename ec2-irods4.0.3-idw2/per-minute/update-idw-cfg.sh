@@ -1,11 +1,12 @@
 #!/bin/bash
-oldFQDN=`sed -n 's/.*serverURL = "http:\/\/\(.*\)".*/\1/p' /etc/idrop-web/idrop-web-config2.groovy`
+oldFQDN=`sed -n 's/location.hostname=\(.*\);/\1/p' /var/www/html/irods-cloud-frontend/app/components/globals.js` 
 FQDN=`ec2metadata --public-hostname`
  
 if [ "$FQDN" != "$oldFQDN" ]
 then
-  sed -i 's/serverURL.*/serverURL = \"http:\/\/'"$FQDN"'\" \}/g' /etc/idrop-web/idrop-web-config2.groovy
-  service tomcat7 restart
+  sudo sed -i 's/location.hostname=.*;/location.hostname=\"'$FQDN'\";/g' /var/www/html/irods-cloud-frontend/app/components/globals.js
+  #sed -i 's/serverURL.*/serverURL = \"http:\/\/'"$FQDN"'\" \}/g' /etc/idrop-web/idrop-web-config2.groovy
+  sudo service tomcat7 restart
   echo $FQDN > /var/tmp/FQDN
 
   # update hostname

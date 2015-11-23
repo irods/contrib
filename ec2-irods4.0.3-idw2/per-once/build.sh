@@ -19,7 +19,7 @@ wget -O /tmp/irods-postgres.deb ftp://ftp.renci.org/pub/irods/releases/${DB_PLUG
 sudo dpkg -i /tmp/irods-icat.deb /tmp/irods-postgres.deb
 sudo apt-get -f -y install
 #configure tomcat
-sudo cp ./server.xml /etc/tomcat7
+#sudo cp ./server.xml /etc/tomcat7
 
 #configure idrop-web
 #sudo mkdir /etc/idrop-web

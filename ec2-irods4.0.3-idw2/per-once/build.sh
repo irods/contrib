@@ -3,8 +3,6 @@
 # build.sh
 # Installs iRODS and iDrop Web
 
-set -x
-
 IRODS_FOLDER=$1
 IRODS_VERSION=$2
 DB_PLUGIN_FOLDER=$3
@@ -49,4 +47,3 @@ sudo cp ./motd.tail /etc
 sudo cp ./*_cron /etc/cron.d
 ./deploy_s3_plugin_1_2.sh
 
-set +x

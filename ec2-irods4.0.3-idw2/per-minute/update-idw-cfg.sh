@@ -1,5 +1,5 @@
 #!/bin/bash
-oldFQDN=`sed -n 's/location.hostname=\(.*\);/\1/p' /var/www/html/irods-cloud-frontend/app/components/globals.js` 
+oldFQDN=`sed -n 's/location.hostname="\(.*\)";/\1/p' /var/www/html/irods-cloud-frontend/app/components/globals.js` 
 FQDN=`ec2metadata --public-hostname`
  
 if [ "$FQDN" != "$oldFQDN" ]

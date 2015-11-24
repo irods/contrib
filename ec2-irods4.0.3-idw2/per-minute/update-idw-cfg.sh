@@ -14,7 +14,7 @@ then
   sudo su -c "echo $FQDN > /etc/hostname"
 
   # Update the irods user's environment
-  sed  -i "s|\(.*irods_host.*\)$oldFQDN\(.*\)|\1$FQDN\2|g" ~irods/.irods/irods_environment.json
+  sudo -u irods bash -c 'sed  -i "s|\(.*irods_host.*\)'$oldFQDN'\(.*\)|\1'$FQDN'\2|g" ~irods/.irods/irods_environment.json'
 
   # Update the tempZone
   sudo su - irods -c "iadmin modresc demoResc host $FQDN"

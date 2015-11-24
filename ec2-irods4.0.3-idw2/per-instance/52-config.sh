@@ -5,8 +5,9 @@
 export FQDN=`ec2metadata --public-hostname`
 sudo hostname $FQDN 
 sudo su -c "echo $FQDN > /etc/hostname"
+sudo su -c "echo $FQDN > ~root/old_hostname.txt"
 sudo su -c "/var/lib/irods/packaging/setup_irods.sh < /opt/irods-aws/setup_responses"
 
-sudo sed -i 's|// var HOST = "/irods-cloud-backend/";|location.hostname="'$FQDN'";|g' /var/www/html/irods-cloud-frontend/app/components/globals.js
+#sudo sed -i 's|// var HOST = "/irods-cloud-backend/";|location.hostname="'$FQDN'";|g' /var/www/html/irods-cloud-frontend/app/components/globals.js
 
 sudo service apache2 restart

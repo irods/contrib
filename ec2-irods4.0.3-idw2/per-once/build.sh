@@ -24,6 +24,7 @@ sudo apt-get -f -y install
 #configure idrop-web
 #sudo mkdir /etc/idrop-web
 #sudo cp ./idrop-web-config2.groovy /etc/idrop-web
+set -x
 
 # configure cloud browser
 wget -O /tmp/irods-cloud-backend.war https://code.renci.org/gf/download/frsrelease/239/2717/irods-cloud-backend.war
@@ -47,3 +48,4 @@ sudo cp ./motd.tail /etc
 sudo cp ./*_cron /etc/cron.d
 ./deploy_s3_plugin_1_2.sh
 
+set +x

@@ -11,4 +11,4 @@ DB_PLUGIN_VERSION=$4
 
 sudo cp ./per-instance/* /var/lib/cloud/scripts/per-instance
 cd ./per-once
-./build.sh $IRODS_FOLDER $IRODS_VERSION $DB_PLUGIN_FOLDER $DB_PLUGIN_VERSION 
+./build.sh $IRODS_FOLDER $IRODS_VERSION $DB_PLUGIN_FOLDER $DB_PLUGIN_VERSION > build.sh.out

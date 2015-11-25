@@ -30,7 +30,8 @@ set -x
 wget -O /tmp/irods-cloud-backend.war https://code.renci.org/gf/download/frsrelease/239/2717/irods-cloud-backend.war
 wget -O /tmp/irods-cloud-frontend.zip https://code.renci.org/gf/download/frsrelease/239/2712/irods-cloud-frontend.zip
 sudo -u tomcat7 bash -c "cp /tmp/irods-cloud-backend.war /var/lib/tomcat7/webapps"
-sudo unzip /tmp/irods-cloud-frontend.zip -d /var/www/html
+sudo unzip /tmp/irods-cloud-frontend.zip -d /var/www/
+sudo sed -i 's/:8080//g' /var/www/irods-cloud-frontend/app/components/globals.js
 sudo cp ./irods-cloud-backend-config.groovy /etc
 
 sudo rm -rf /var/lib/tomcat7/webapps/ROOT

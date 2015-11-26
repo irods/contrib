@@ -5,6 +5,7 @@
 #include "irods_ms_plugin.hpp"
 #include "irods_file_object.hpp"
 #include "irods_resource_redirect.hpp"
+#include "irods_hierarchy_parser.hpp"
 
 // =-=-=-=-=-=-=-
 #include <string>
@@ -15,6 +16,54 @@ extern "C" {
 
     double get_plugin_interface_version() {
         return 1.0;
+    }
+
+    irods::error find_compound_resource_in_hierarchy(
+            const std::string&   _hier,
+            irods::resource_ptr& _resc ) {
+
+        irods::hierarchy_parser p;
+        irods::error ret = p.set_string( _hier );
+        if( !ret.ok() ) {
+            return PASS( ret );
+        }
+
+        std::string last;
+        ret = p.last_resc( last );
+        if( !ret.ok() ) {
+            return PASS( ret );
+        }
+        std::cout << "XXXX - last: " << last << std::endl;
+        bool found = false;
+        std::string prev;
+        irods::hierarchy_parser::const_iterator itr;
+        for( itr = p.begin(); itr != p.end(); ++itr ) {
+            if( *itr == last ) {
+                found = true;
+                break;
+            }
+            prev = *itr;
+        }
+
+        std::cout << "XXXX - prev: " << prev << std::endl;
+        
+        if( !found ) {
+            std::string msg = "Previous child not foudn for [";
+            msg += _hier;
+            msg += "]";
+            return ERROR(
+                    CHILD_NOT_FOUND,
+                    msg );
+        }
+
+        std::cout << "XXXX - resolve" << std::endl;
+        ret = resc_mgr.resolve( prev, _resc );
+        if( !ret.ok() ) {
+            return PASS( ret );
+        }
+
+        std::cout << "XXXX - success" << std::endl;
+        return SUCCESS();
     }
 
     int msisync_to_archive(
@@ -63,9 +112,37 @@ extern "C" {
             (keyValPair_t*)&kvp,
             ADMIN_KW,
             "true" );
+
+        // get root resc to
+        irods::resource_ptr resc; 
+        irods::error ret = find_compound_resource_in_hierarchy(
+                               resource_hierarchy,
+                               resc );
+        if( !ret.ok() ) {
+            return ret.code();
+        }
+
+        std::string auto_repl( "off" );
+        ret = resc->get_property<std::string>(
+                  "auto_repl",
+                  auto_repl );
+        if( !ret.ok() ) {
+            irods::log( PASS( ret ) );
+        }
+
+        std::cout << "XXXX - auto_repl :: " << auto_repl << std::endl;
+
+        bool reset_to_off = false;
+        if( "off" == auto_repl ) {
+            reset_to_off = true;
+            resc->set_property<std::string>(
+                "auto_repl",
+                "on" ); 
+        }     
+
         // inform the resource that a write operation happened
         // to put it in a state where it will need to replicate
-        irods::error ret = fileNotify(
+        ret = fileNotify(
                 _rei->rsComm,
                 file_obj,
                 irods::WRITE_OPERATION );
@@ -73,6 +150,11 @@ extern "C" {
             cout << "msisync_to_archive - fileNotify failed ["
                  << ret.result().c_str() << "] - ["
                  << ret.code() << "]" << endl;
+            if( reset_to_off ) {
+                resc->set_property<std::string>(
+                        "auto_repl",
+                        "off" ); 
+            }
             return ret.code();
         }
 
@@ -85,7 +167,18 @@ extern "C" {
             cout << "msisync_to_archive - fileModified failed ["
                  << ret.result().c_str() << "] - ["
                  << ret.code() << "]" << endl;
+            if( reset_to_off ) {
+                resc->set_property<std::string>(
+                        "auto_repl",
+                        "off" ); 
+            }
             return ret.code();
+        }
+
+        if( reset_to_off ) {
+           resc->set_property<std::string>(
+                  "auto_repl",
+                  "off" ); 
         }
 
         return 0; 

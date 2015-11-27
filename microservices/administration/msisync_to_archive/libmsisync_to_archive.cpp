@@ -33,7 +33,7 @@ extern "C" {
         if( !ret.ok() ) {
             return PASS( ret );
         }
-        std::cout << "XXXX - last: " << last << std::endl;
+
         bool found = false;
         std::string prev;
         irods::hierarchy_parser::const_iterator itr;
@@ -45,8 +45,6 @@ extern "C" {
             prev = *itr;
         }
 
-        std::cout << "XXXX - prev: " << prev << std::endl;
-        
         if( !found ) {
             std::string msg = "Previous child not foudn for [";
             msg += _hier;
@@ -56,13 +54,11 @@ extern "C" {
                     msg );
         }
 
-        std::cout << "XXXX - resolve" << std::endl;
         ret = resc_mgr.resolve( prev, _resc );
         if( !ret.ok() ) {
             return PASS( ret );
         }
 
-        std::cout << "XXXX - success" << std::endl;
         return SUCCESS();
     }
 
@@ -129,8 +125,6 @@ extern "C" {
         if( !ret.ok() ) {
             irods::log( PASS( ret ) );
         }
-
-        std::cout << "XXXX - auto_repl :: " << auto_repl << std::endl;
 
         bool reset_to_off = false;
         if( "off" == auto_repl ) {

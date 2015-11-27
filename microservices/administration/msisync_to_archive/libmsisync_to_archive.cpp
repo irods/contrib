@@ -46,7 +46,7 @@ extern "C" {
         }
 
         if( !found ) {
-            std::string msg = "Previous child not foudn for [";
+            std::string msg = "Previous child not found for [";
             msg += _hier;
             msg += "]";
             return ERROR(

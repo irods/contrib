@@ -103,12 +103,6 @@ extern "C" {
                 0,     // mode
                 0 ) ); // flags
 
-        const keyValPair_t& kvp = file_obj->cond_input();
-        addKeyVal(
-            (keyValPair_t*)&kvp,
-            ADMIN_KW,
-            "true" );
-
         // get root resc to
         irods::resource_ptr resc; 
         irods::error ret = find_compound_resource_in_hierarchy(
@@ -152,27 +146,33 @@ extern "C" {
             return ret.code();
         }
 
+        const keyValPair_t& kvp = file_obj->cond_input();
+        addKeyVal(
+            (keyValPair_t*)&kvp,
+            ADMIN_KW,
+            "true" );
+        int auth_flg = _rei->rsComm->clientUser.authInfo.authFlag;
+        _rei->rsComm->clientUser.authInfo.authFlag = LOCAL_PRIV_USER_AUTH;
+
         // inform the resource that a modification is complete
         // which will trigger the replication
         ret = fileModified(
                 _rei->rsComm,
                 file_obj );
+
+        // reset state before anything else happens
+        _rei->rsComm->clientUser.authInfo.authFlag = auth_flg;
+        if( reset_to_off ) {
+            resc->set_property<std::string>(
+                    "auto_repl",
+                    "off" );
+        }
+
         if( !ret.ok() ) {
             cout << "msisync_to_archive - fileModified failed ["
                  << ret.result().c_str() << "] - ["
                  << ret.code() << "]" << endl;
-            if( reset_to_off ) {
-                resc->set_property<std::string>(
-                        "auto_repl",
-                        "off" ); 
-            }
             return ret.code();
-        }
-
-        if( reset_to_off ) {
-           resc->set_property<std::string>(
-                  "auto_repl",
-                  "off" ); 
         }
 
         return 0; 

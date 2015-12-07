@@ -1,5 +1,5 @@
 /*Backend app configuration
- *For app specific configs, prefix with beconf. for consistency 
+ *For app specific configs, prefix with "beconf." for consistency
  */
 
 

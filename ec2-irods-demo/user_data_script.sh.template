@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# get the code
+apt-get update
+apt-get -y install git
+git clone https://github.com/irods/contrib /opt/contrib
+cd /opt/contrib
+git checkout TEMPLATE_BRANCH_NAME
+cp -r /opt/contrib/ec2-irods-demo /opt/ec2-irods-demo
+
+# install software
+cd /opt/ec2-irods-demo
+cp `pwd`/per-boot/* /var/lib/cloud/scripts/per-boot
+cp `pwd`/per-instance/* /var/lib/cloud/scripts/per-instance
+`pwd`/per-once/install_and_setup.sh TEMPLATE_IRODS_VERSION TEMPLATE_DB_PLUGIN_VERSION > `pwd`/per-once/install_and_setup.sh.out
+
+# cleanup
+shred -u /root/.ssh/authorized_keys
+shred -u /etc/ssh/*_key /etc/ssh/*_key.pub
+shred -u /home/ubuntu/.ssh/authorized_keys
+shred -u /home/ubuntu/.*history
+shred -u /var/log/lastlog
+shred -u /var/log/wtmp
+touch /var/log/lastlog
+touch /var/log/wtmp
+history -c

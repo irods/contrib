@@ -58,10 +58,11 @@ END_PREINSTALL
 %postinstall << END_POSTINSTALL
 . /etc/irods/service_account.config 2> /dev/null
 chown $$IRODS_SERVICE_ACCOUNT_NAME:$$IRODS_SERVICE_GROUP_NAME ${IRODS_HOME_DIR}/plugins/microservices/libmsiforce_resource.so
-chown $$IRODS_SERVICE_ACCOUNT_NAME:$$IRODS_SERVICE_GROUP_NAME ${IRODS_HOME_DIR}/plugins/microservices/libmsisync_to_archive.so
 chown $$IRODS_SERVICE_ACCOUNT_NAME:$$IRODS_SERVICE_GROUP_NAME ${IRODS_HOME_DIR}/plugins/microservices/libmsifree_microservice_out.so
+chown $$IRODS_SERVICE_ACCOUNT_NAME:$$IRODS_SERVICE_GROUP_NAME ${IRODS_HOME_DIR}/plugins/microservices/libmsiencrypt_replica.so
 chown $$IRODS_SERVICE_ACCOUNT_NAME:$$IRODS_SERVICE_GROUP_NAME ${IRODS_HOME_DIR}/rules
 chown $$IRODS_SERVICE_ACCOUNT_NAME:$$IRODS_SERVICE_GROUP_NAME ${IRODS_HOME_DIR}/rules/test_msifree_microservice_out.r
+chown $$IRODS_SERVICE_ACCOUNT_NAME:$$IRODS_SERVICE_GROUP_NAME ${IRODS_HOME_DIR}/rules/test_msiencrypt_replica.r
 END_POSTINSTALL
 
 # =-=-=-=-=-=-=-
@@ -104,7 +105,9 @@ END_POSTREMOVE
 # Full File Listing
 # =-=-=-=-=-=-=-
 f 644 root root ${IRODS_HOME_DIR}/plugins/microservices/libmsiforce_resource.so ./msiforce_resource/libmsiforce_resource.so
-f 644 root root ${IRODS_HOME_DIR}/plugins/microservices/libmsisync_to_archive.so ./msisync_to_archive/libmsisync_to_archive.so
+#f 644 root root ${IRODS_HOME_DIR}/plugins/microservices/libmsisync_to_archive.so ./msisync_to_archive/libmsisync_to_archive.so
 f 644 root root ${IRODS_HOME_DIR}/plugins/microservices/libmsifree_microservice_out.so ./msifree_microservice_out/libmsifree_microservice_out.so
+f 644 root root ${IRODS_HOME_DIR}/plugins/microservices/libmsiencrypt_replica.so ./msiencrypt_replica/libmsiencrypt_replica.so
 d 755 root root ${IRODS_HOME_DIR}/rules -
 f 644 root root ${IRODS_HOME_DIR}/rules/test_msifree_microservice_out.r ./msifree_microservice_out/test_msifree_microservice_out.r
+f 644 root root ${IRODS_HOME_DIR}/rules/test_msiencrypt_replica.r ./msiencrypt_replica/test_msiencrypt_replica.r

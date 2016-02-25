@@ -12,11 +12,11 @@
 #include <boost/filesystem.hpp>
 
 /**
- * _source_path           - fully quallified physical path of the file to be encrypted/decrypted
- * _destination_path      - fully quallified physical path of the location to write
+ * _source_path           - fully qualified physical path of the file to be encrypted/decrypted
+ * _destination_path      - fully qualified physical path of the location to write
  * _encryption_key        - key used to encrypt / decrypt the file ( must be 32 characters )
  * _initialization_vector - salt used to start the encryption process ( must be same length as the key )
- * _encrypt_decrypt_flag  - flag to indicate opertation: 1 - encrypt, 0 - decrypt
+ * _encrypt_decrypt_flag  - flag to indicate operation: 1 - encrypt, 0 - decrypt
  * **/
 extern "C" {
     int msiencrypt_replica(

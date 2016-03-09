@@ -1,0 +1,38 @@
+version: '2'
+
+services:
+  db:
+    image: postgres:9.4
+    volumes:
+      - /home/ubuntu/pgdata:/var/lib/postgresql/data/pgdata
+    environment:
+      - PGDATA=/var/lib/postgresql/data/pgdata
+#      - POSTGRES_USER=irods
+#      - POSTGRES_PASSWORD=northamericanbluelabcoattelephone
+#      - POSTGRES_DB=ICAT
+    container_name: "db"
+
+  icat:
+    environment:
+      - POSTGRES_SERVER=db
+    build:
+      context: ./icat
+    links:
+      - db:db
+    container_name: "icat"
+
+  idrop:
+    build:
+      context: ./idrop-web2-tomcat7
+    links:
+      - icat:icat
+    container_name: "idrop"
+
+  web:
+    build:
+      context: ./apache2-proxy
+    links:
+      - idrop:idrop
+    ports:
+      - 0.0.0.0:80:80
+    container_name: "web"

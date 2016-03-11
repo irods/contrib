@@ -21,7 +21,7 @@ environments {
  * Take the following outside of the comment block and configure here
  */
  idrop.config.preset.host="localhost"
- idrop.config.preset.port="1247"
+// idrop.config.preset.port="1248"
  idrop.config.preset.resource=""
  idrop.config.preset.zone="tempZone"
  // can be Standard or PAM right now

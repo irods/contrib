@@ -10,3 +10,5 @@ RUN sed -e 's/#LoadModule proxy_module/LoadModule proxy_module/' -i conf/httpd.c
 RUN echo "Include sites-enabled" conf/httpd.conf && \
     echo "IncludeOptional sites-enabled/*.conf" conf/httpd.conf && \
     cat sites-available/ajp.apache.conf >> conf/httpd.conf
+RUN ln -s /export/etc/irods/chain.pem /usr/local/apache2/conf/server.crt
+RUN ln -s /export/etc/irods/server.key /usr/local/apache2/conf/server.key

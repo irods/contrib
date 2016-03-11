@@ -25,12 +25,14 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y wget libcurl4-gnutls-dev &
 
 RUN mkdir /opt/irods
 
+RUN apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install psmisc rsync -y && apt-get clean
 ADD ./genresp.sh /opt/irods/genresp.sh
 ADD ./setupdb.sh /opt/irods/setupdb.sh
 ADD ./config.sh /opt/irods/config.sh
 ADD ./bootstrap.sh /opt/irods/bootstrap.sh
 RUN chmod a+x /opt/irods/*.sh
+ADD ./.export /
 
 EXPOSE 1247
 #EXPOSE 1248
-ENTRYPOINT [ "/opt/irods/bootstrap.sh" ]
+CMD "/opt/irods/bootstrap.sh"

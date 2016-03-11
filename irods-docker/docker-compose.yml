@@ -4,29 +4,35 @@ services:
   db:
     image: postgres:9.4
     volumes:
-      - /home/ubuntu/pgdata:/var/lib/postgresql/data/pgdata
+      - /home/ubuntu/export/pgdata:/var/lib/postgresql/data/pgdata
     environment:
       - PGDATA=/var/lib/postgresql/data/pgdata
-#      - POSTGRES_USER=irods
-#      - POSTGRES_PASSWORD=northamericanbluelabcoattelephone
-#      - POSTGRES_DB=ICAT
-    container_name: "db"
+    container_name: db
 
   icat:
     environment:
       - POSTGRES_SERVER=db
     build:
       context: ./icat
+      dockerfile: Dockerfile.418
     links:
       - db:db
-    container_name: "icat"
+    container_name: icat
+    devices:
+      - /dev/urandom:/dev/random
+    volumes:
+      - /home/ubuntu/export:/export
+    hostname: icat
 
   idrop:
     build:
       context: ./idrop-web2-tomcat7
     links:
       - icat:icat
-    container_name: "idrop"
+    devices:
+      - /dev/urandom:/dev/random
+    container_name: idrop
+    hostname: idrop
 
   web:
     build:
@@ -35,4 +41,7 @@ services:
       - idrop:idrop
     ports:
       - 0.0.0.0:80:80
-    container_name: "web"
+    volumes_from:
+      - icat:ro
+    container_name: web
+    hostname: FQDNSTRING

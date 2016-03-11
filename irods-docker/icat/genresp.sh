@@ -28,5 +28,5 @@ echo "db" >> $RESPFILE             # database hostname
 echo "5432" >> $RESPFILE                  # database port
 echo "ICAT" >> $RESPFILE                  # database DB name
 echo "irods" >> $RESPFILE                 # database admin username
-echo "northamericanbluelabcoattelelphone" | cut -c 1-16 >> $RESPFILE        # database admin password
+openssl rand -base64 16 | sed 's,/,S,g' | cut -c 1-16 >> $RESPFILE        # database admin password
 echo "yes" >> $RESPFILE                   # confirm database settings

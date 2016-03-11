@@ -11,9 +11,9 @@
  * 
  */
 environments {
-	
-	 production {  grails.serverURL = "http://localhost:8551/idrop-web2" } 
-	 
+
+	 production {   grails.serverURL = "" }
+
 }
 
 /*
@@ -25,7 +25,7 @@ environments {
  idrop.config.preset.resource=""
  idrop.config.preset.zone="tempZone"
  // can be Standard or PAM right now
- idrop.config.preset.authScheme="Standard"
+ idrop.config.preset.authScheme="PAM"
 
 
 /*
@@ -72,7 +72,7 @@ idrop.config.use.userprofile=true
 idrop.config.use.sharing=true
 
 // do I want to show the gallery view?
-idrop.config.use.gallery.view=false
+idrop.config.use.gallery.view=true
 
 // do I want to show the browse view?
 idrop.config.use.browse.view=true

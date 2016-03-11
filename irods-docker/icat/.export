@@ -1,0 +1,5 @@
+/var/lib/irods/.irods
+/var/lib/irods/iRODS/server/config
+/var/lib/irods/iRODS/server/log
+/etc/irods
+/var/lib/irods/Vault

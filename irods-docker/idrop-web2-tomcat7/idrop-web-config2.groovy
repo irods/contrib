@@ -20,12 +20,13 @@ environments {
  * 2) If you want to set things up so that the idrop web browser automatically points to a certain grid (i.e. only user ID and password show, then do something like below.
  * Take the following outside of the comment block and configure here
  */
- idrop.config.preset.host="icat"
- idrop.config.preset.port="1247"
- idrop.config.preset.resource=""
- idrop.config.preset.zone="tempZone"
- // can be Standard or PAM right now
- idrop.config.preset.authScheme="PAM"
+// idrop.config.preset.host="icat"
+// idrop.config.preset.port="1247"
+// idrop.config.preset.resource=""
+// idrop.config.preset.zone="tempZone"
+// // can be Standard or PAM right now
+// idrop.config.preset.authScheme="PAM"
+// idrop.config.use.auth.method.fallback=false
 
 
 /*

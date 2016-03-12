@@ -4,7 +4,7 @@ services:
   db:
     image: postgres:9.4
     volumes:
-      - /home/ubuntu/export/pgdata:/var/lib/postgresql/data/pgdata
+      - /home/ubuntu/export/:/var/lib/postgresql/data/
     environment:
       - PGDATA=/var/lib/postgresql/data/pgdata
     container_name: db
@@ -41,7 +41,8 @@ services:
       - idrop:idrop
     ports:
       - 0.0.0.0:80:80
+      - 0.0.0.0:443:443
     volumes_from:
       - icat:ro
     container_name: web
-    hostname: FQDNSTRING
+    hostname: web

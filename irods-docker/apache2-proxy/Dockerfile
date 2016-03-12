@@ -12,3 +12,5 @@ RUN echo "Include sites-enabled" conf/httpd.conf && \
     cat sites-available/ajp.apache.conf >> conf/httpd.conf
 RUN ln -s /export/etc/irods/chain.pem /usr/local/apache2/conf/server.crt
 RUN ln -s /export/etc/irods/server.key /usr/local/apache2/conf/server.key
+
+EXPOSE 443

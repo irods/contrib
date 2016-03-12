@@ -7,7 +7,7 @@ LoadModule cache_socache_module modules/mod_cache_socache.so
 LoadModule socache_shmcb_module modules/mod_socache_shmcb.so
 LoadModule socache_dbm_module modules/mod_socache_dbm.so
 LoadModule socache_memcache_module modules/mod_socache_memcache.so
-
+Listen 443
 <VirtualHost *:443>
   <Proxy *>
         Order deny,allow

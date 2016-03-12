@@ -1,9 +1,25 @@
 #!/bin/bash
 RODS_PASSWORD=$1
 
-
+set -e
 # Wait for progres
-sleep 5
+
+if [ -d /export ]; then
+    if [ ! -s /export/.export ]; then
+        cp /.export /export/.export
+    fi
+    while read f; do
+
+        if [ ! -d ${f} ]; then
+            mkdir -p /export${f}
+        else
+            rsync --ignore-existing -prRALE ${f} /export
+            rm -rf ${f}
+        fi
+        chown -R 999:999 /export${f}
+        ln -s /export${f} ${f}
+    done </export/.export
+fi
 
 # Grab postgres env: should pass properly in docker compose
 if [ -z "$POSTGRES_SERVER" ]
@@ -42,33 +58,27 @@ fi
 #
 #fi
 # Copy & rm then link folders in export, need to add option for files
-if [ -d /export ]; then
-    if [ ! -s /export/.export ]; then
-        cp /.export /export/.export
-    fi
-    while read f; do
 
-        if [ ! -d ${f} ]; then
-            mkdir -p /export${f}
-        else
-            rsync --ignore-existing -prRALE ${f} /export
-            rm -rf ${f}
-        fi
-        chown -R 999:999 /export${f}
-        ln -s /export${f} ${f}
-    done </export/.export
-fi
-
-# Delete the service_account.config file so irods creates the irods user
-if [ -e /etc/irods/service_account.config ]; then
-    rm -f /etc/irods/service_account.config
-fi
 # set up PAM auth
 source /opt/irods/pam.sh
 # set up the iCAT database
 /opt/irods/setupdb.sh /etc/irods/setup_responses
-# set up iRODS
-/opt/irods/config.sh /etc/irods/setup_responses
+# Create the previous variables for IRODS_SERVICE_ACCOUNT_NAME
+if [ -e /etc/irods/service_account.config ]; then
+    source /etc/irods/service_account.config
+    head -n 2 /etc/irods/setup_responses | /var/lib/irods/packaging/setup_irods_service_account.sh
+    sudo su - ${IRODS_SERVICE_ACCOUNT_NAME} -c "touch /var/lib/${IRODS_SERVICE_ACCOUNT_NAME}/packaging/binary_installation.flag"
+    sudo su - ${IRODS_SERVICE_ACCOUNT_NAME} -c "mkdir -p /tmp/${IRODS_SERVICE_ACCOUNT_NAME}/"
+    sudo su - ${IRODS_SERVICE_ACCOUNT_NAME} -c "touch /tmp/${IRODS_SERVICE_ACCOUNT_NAME}/setup_irods_database.flag"
+    sudo su - ${IRODS_SERVICE_ACCOUNT_NAME} -c "touch /tmp/${IRODS_SERVICE_ACCOUNT_NAME}/setup_irods_configuration.flag"
+    sed -e 's/native/PAM/' -i /var/lib/irods/iRODS/scripts/perl/irods_setup.pl
+    tail -n +3 /etc/irods/setup_responses | /var/lib/irods/packaging/setup_irods.sh
+else
+    # set up iRODS
+    /opt/irods/config.sh /etc/irods/setup_responses
+fi
+
+
 # this script must end with a persistent foreground process
 tail -f /var/lib/irods/iRODS/server/log/rodsLog.*
 #sleep infinity

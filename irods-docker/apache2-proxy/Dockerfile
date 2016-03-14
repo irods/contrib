@@ -13,4 +13,8 @@ RUN echo "Include sites-enabled" conf/httpd.conf && \
 RUN ln -s /export/etc/irods/chain.pem /usr/local/apache2/conf/server.crt
 RUN ln -s /export/etc/irods/server.key /usr/local/apache2/conf/server.key
 
+ADD ./entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+CMD ["/docker-entrypoint.sh"]
+
 EXPOSE 443

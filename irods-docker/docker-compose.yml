@@ -14,7 +14,6 @@ services:
       - POSTGRES_SERVER=db
     build:
       context: ./icat
-      dockerfile: Dockerfile.418
     links:
       - db:db
     container_name: icat
@@ -31,6 +30,8 @@ services:
       - icat:icat
     devices:
       - /dev/urandom:/dev/random
+    volumes_from:
+      - icat:ro
     container_name: idrop
     hostname: idrop
 

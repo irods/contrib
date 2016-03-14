@@ -12,3 +12,5 @@ if [ ! -s /etc/irods/chain.pem ] && [ ! -s /etc/irods/server.key ] && [ ! -s /et
     sed 's@\("icat_host"\)@"irods_ssl_certificate_chain_file": "/etc/irods/chain.pem",\n    "irods_ssl_certificate_key_file": "/etc/irods/server.key",\n    "irods_ssl_dh_params_file": "/etc/irods/dhparams.pem",\n    \1@' -i /etc/irods/server_config.json
     sed -e 's/native/PAM/' -i /var/lib/irods/iRODS/scripts/perl/irods_setup.pl
 fi
+
+sed 's@\("irods_host"\)@"irods_ssl_certificate_chain_file": "/etc/irods/chain.pem",\n    "irods_ssl_certificate_key_file": "/etc/irods/server.key",\n    "irods_ssl_dh_params_file": "/etc/irods/dhparams.pem",\n    irods_ssl_certificate_ca_file": "/etc/irods/chain.pem",\n    irods_ssl_verify_server": "cert",\n    \1@' -i /var/lib/irods/.irods/irods_environment.json

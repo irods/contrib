@@ -1,4 +1,4 @@
-FROM tomcat:7-jre7
+FROM tomcat:7-jre8
 
 MAINTAINER Mike Knowles <mikewknowles+rods@gmail.com>
 
@@ -10,6 +10,12 @@ RUN mkdir /etc/idrop-web
 ADD ./idrop-web-config2.groovy /etc/idrop-web/idrop-web-config2.groovy
 #COPY ./tomcat-users.xml conf/
 
-EXPOSE 8009
+ADD ./keyresp /keyresp
+RUN keytool -genkey -alias tomcat -keyalg RSA -keystore /usr/lib/ssl/.keystore < /keyresp
 
+
+EXPOSE 8009
+ADD ./docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+#CMD ["/docker-entrypoint.sh"]
 

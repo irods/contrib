@@ -11,21 +11,22 @@
  * 
  */
 environments {
-	
-	 production {  grails.serverURL = "http://localhost:8551/idrop-web2" } 
-	 
+
+	 production {   grails.serverURL = "" }
+
 }
 
 /*
  * 2) If you want to set things up so that the idrop web browser automatically points to a certain grid (i.e. only user ID and password show, then do something like below.
  * Take the following outside of the comment block and configure here
  */
- idrop.config.preset.host="localhost"
-// idrop.config.preset.port="1248"
- idrop.config.preset.resource=""
+ idrop.config.preset.host="icat"
+ idrop.config.preset.port="1247"
+// idrop.config.preset.resource="demoResc"
  idrop.config.preset.zone="tempZone"
  // can be Standard or PAM right now
- idrop.config.preset.authScheme="Standard"
+ idrop.config.preset.authScheme="PAM"
+ //idrop.config.use.auth.method.fallback=false
 
 
 /*
@@ -72,7 +73,7 @@ idrop.config.use.userprofile=true
 idrop.config.use.sharing=true
 
 // do I want to show the gallery view?
-idrop.config.use.gallery.view=false
+idrop.config.use.gallery.view=true
 
 // do I want to show the browse view?
 idrop.config.use.browse.view=true

@@ -1,0 +1,35 @@
+LoadModule rewrite_module modules/mod_rewrite.so
+LoadModule ssl_module modules/mod_ssl.so
+LoadModule cache_module modules/mod_cache.so
+#Include conf/extra/httpd-ssl.conf
+LoadModule authn_socache_module modules/mod_authn_socache.so
+LoadModule cache_socache_module modules/mod_cache_socache.so
+LoadModule socache_shmcb_module modules/mod_socache_shmcb.so
+LoadModule socache_dbm_module modules/mod_socache_dbm.so
+LoadModule socache_memcache_module modules/mod_socache_memcache.so
+Listen 443
+<VirtualHost *:443>
+  <Proxy *>
+        Order deny,allow
+        Allow from all
+  </Proxy>
+  ServerName 172.18.0.5
+  ServerName 10.117.231.79
+  RequestHeader set X-Forwarded-Proto "https"
+  SSLEngine On
+  SSLCipherSuite ALL:!ADH:!EXPORT56:RC4+RSA:+HIGH:+MEDIUM:+LOW:+SSLv2:+EXP:+eNULL
+  SSLCertificateFile /export/etc/irods/chain.pem
+  SSLCertificateKeyFile /export/etc/irods/server.key
+  SSLProxyEngine On
+  SSLVerifyClient optional
+  ProxyPreserveHost On
+  ProxyPassReverseCookiePath / /
+
+
+  ProxyRequests           Off
+  ProxyPass               /       ajp://idrop:8009/
+  ProxyPassReverse        /       ajp://idop:8009/
+</VirtualHost>
+RewriteEngine           on
+ReWriteCond             %{SERVER_PORT} !^443$
+RewriteRule             ^/(.*) https://%{HTTP_HOST}/$1 [NC,R,L]

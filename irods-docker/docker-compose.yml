@@ -1,0 +1,55 @@
+version: '2'
+
+services:
+  db:
+    image: postgres:9.4
+    volumes:
+      - /home/ubuntu/export/:/var/lib/postgresql/data/
+    environment:
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    container_name: db
+    restart: always
+
+  icat:
+    environment:
+      - POSTGRES_SERVER=db
+    build:
+      context: ./icat
+    links:
+      - db:db
+    container_name: icat
+    devices:
+      - /dev/urandom:/dev/random
+    volumes:
+      - export:/export
+    hostname: icat
+    ports:
+      - 0.0.0.0:1247:1247
+    restart: always
+
+  idrop:
+    build:
+      context: ./idrop-web2-tomcat7
+    links:
+      - icat:icat
+    devices:
+      - /dev/urandom:/dev/random
+    volumes_from:
+      - icat:ro
+    container_name: idrop
+    hostname: idrop
+    restart: always
+
+  web:
+    build:
+      context: ./apache2-proxy
+    links:
+      - idrop:idrop
+    ports:
+      - 0.0.0.0:80:80
+      - 0.0.0.0:443:443
+    volumes_from:
+      - icat:ro
+    container_name: web
+    hostname: web
+    restart: always

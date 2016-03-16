@@ -6,5 +6,6 @@ do
     sleep 2
 done;
 echo
-keytool -import -keystore /etc/ssl/certs/java/cacerts -storepass changeit -noprompt -file /export/etc/irods/chain.pem
+keytool -import -storepass changeit -noprompt -file /export/etc/irods/chain.pem -keystore /etc/ssl/certs/java/cacerts
+
 catalina.sh run

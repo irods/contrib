@@ -8,6 +8,7 @@ services:
     environment:
       - PGDATA=/var/lib/postgresql/data/pgdata
     container_name: db
+    restart: always
 
   icat:
     environment:
@@ -20,8 +21,11 @@ services:
     devices:
       - /dev/urandom:/dev/random
     volumes:
-      - /home/ubuntu/export:/export
+      - export:/export
     hostname: icat
+    ports:
+      - 0.0.0.0:1247:1247
+    restart: always
 
   idrop:
     build:
@@ -34,6 +38,7 @@ services:
       - icat:ro
     container_name: idrop
     hostname: idrop
+    restart: always
 
   web:
     build:
@@ -47,3 +52,4 @@ services:
       - icat:ro
     container_name: web
     hostname: web
+    restart: always

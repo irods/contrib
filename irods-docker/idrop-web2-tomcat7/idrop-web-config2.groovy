@@ -22,11 +22,11 @@ environments {
  */
  idrop.config.preset.host="icat"
  idrop.config.preset.port="1247"
- idrop.config.preset.resource=""
+// idrop.config.preset.resource="demoResc"
  idrop.config.preset.zone="tempZone"
  // can be Standard or PAM right now
  idrop.config.preset.authScheme="PAM"
- idrop.config.use.auth.method.fallback=false
+ //idrop.config.use.auth.method.fallback=false
 
 
 /*

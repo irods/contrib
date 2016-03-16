@@ -1,19 +1,18 @@
 FROM ubuntu:14.04
 MAINTAINER Mike Knowles <mikewknowles+rods@gmail.com>
 
-RUN apt-get update -qq ; apt-get upgrade -y -qq
-
 RUN locale-gen en_US.UTF-8
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US.UTF-8
 ENV LC_ALL en_US.UTF-8
-ENV IRODS_VERSION 4.1.3
-ENV ICAT_PLUGIN 1.5
+ENV IRODS_VERSION 4.1.8
+ENV ICAT_PLUGIN 1.8
 ENV FTP_URL ftp://ftp.renci.org/pub/irods/releases/$IRODS_VERSION/ubuntu14
 
 #install iRODS
 # install package dependencies to prevent Docker build from erring out
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y -qq wget libcurl4-gnutls-dev psmisc rsync krb5-admin-server libpam-krb5 && \
+RUN apt-get update -qq ; apt-get upgrade -y -qq && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq wget libcurl4-gnutls-dev psmisc rsync krb5-admin-server libpam-krb5 && \
     echo "deb http://apt.postgresql.org/pub/repos/apt/ trusty-pgdg main" >> /etc/apt/sources.list.d/pgdg.list && \
     wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add - && \
     apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y postgresql-client-9.4 && \
@@ -27,11 +26,6 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y -qq wget libcurl4-gnutls-d
     apt-get autoremove -qq -y && apt-get clean -qq && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /etc/apt/sources.list.d/*
 
 RUN mkdir /opt/irods
-
-##kerberos/PAM
-#RUN apt-get update -qq && \
-#    DEBIAN_FRONTEND=noninteractive apt-get install psmisc rsync krb5-admin-server libpam-krb5 -y && \
-#    apt-get clean
 
 ADD ./krb5.conf /etc/krb5.conf
 ADD ./common-* /etc/pam.d/

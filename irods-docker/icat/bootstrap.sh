@@ -3,6 +3,11 @@ RODS_PASSWORD=$1
 
 set -e
 # Wait for progres
+while [ ! -s /export/pgdata ];
+do
+    echo -n "Waiting for postgres"
+    sleep 5
+done;
 
 if [ -d /export ]; then
     if [ ! -s /export/.export ]; then
@@ -71,12 +76,21 @@ if [ -e /etc/irods/service_account.config ]; then
     sudo su - ${IRODS_SERVICE_ACCOUNT_NAME} -c "mkdir -p /tmp/${IRODS_SERVICE_ACCOUNT_NAME}/"
     sudo su - ${IRODS_SERVICE_ACCOUNT_NAME} -c "touch /tmp/${IRODS_SERVICE_ACCOUNT_NAME}/setup_irods_database.flag"
     sudo su - ${IRODS_SERVICE_ACCOUNT_NAME} -c "touch /tmp/${IRODS_SERVICE_ACCOUNT_NAME}/setup_irods_configuration.flag"
-    sed -e 's/native/PAM/' -i /var/lib/irods/iRODS/scripts/perl/irods_setup.pl
+    # For some reason, the native auth scheme is set by default for the server
+#    sed -e 's/native/PAM/' -i /var/lib/irods/iRODS/scripts/perl/irods_setup.pl
     tail -n +3 /etc/irods/setup_responses | /var/lib/irods/packaging/setup_irods.sh
 else
     # set up iRODS
     /opt/irods/config.sh /etc/irods/setup_responses
 fi
+sed 's@\("irods_host"\)@"irods_authentication_scheme": "PAM",\
+    "irods_ssl_ca_certificate_file": "/etc/irods/chain.pem",\
+    "irods_ssl_certificate_chain_file": "/etc/irods/chain.pem",\
+    "irods_ssl_certificate_key_file": "/etc/irods/server.key",\
+    "irods_ssl_dh_params_file": "/etc/irods/dhparams.pem",\
+    "irods_ssl_certificate_ca_file": "/etc/irods/chain.pem",\
+    "irods_ssl_verify_server": "cert",\
+    \1@' -i /var/lib/irods/.irods/irods_environment.json
 
 
 # this script must end with a persistent foreground process

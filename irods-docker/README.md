@@ -13,7 +13,7 @@ The new schema for the iRODS Docker setup involves involves multiple containers 
     * The password to this database is stored in `/etc/irods/setup_responses`
     * postgresql-client-9.4 is used in the icat container to interact with the database
 * [iCAT server] is built on top of an [ubuntu:14.04](https://hub.docker.com/_/ubuntu/) docker image 
-    * [kerberos](icat/krb5.conf) and [pam](icat/pam.sh) parameters are adapted from work done by [jonesa](http://github/jonesa)
+    * [kerberos](icat/krb5.conf) and [pam](icat/pam.sh) parameters are adapted from work done by [jonesa](http://github.com/jonesa)
     * [bootstrap.sh] is meant to have a directory mounted to `/export` which is the shared to other containers
     * The [export file](icat/.export) is used with `rsync` to copy the directory and parent directories to the `/export` folder then link the resulting files
     * [bootstrap.sh] will also reuse the `/export` directory if it exists
@@ -46,4 +46,4 @@ docker-compose up -d
 ### Caveats
 * The export folder is an external volume mapped by docker compose to a folder named export in the current directory, this can be changed to appear elesewhere in [docker-compose.yml](docker-compose.yml)
 * The export folder allows the iRODS instance to be restarted and keep all the same configuration and potentially move the files elsewhere
-    * The [postgres:9.4](https://hub.docker.com/_/postgres/) docker image *must* be allowed to change permissions and owners in the export foldewr
+    * The [postgres:9.4](https://hub.docker.com/_/postgres/) docker image *must* be allowed to change permissions and owners in the export folder

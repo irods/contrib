@@ -1,0 +1,129 @@
+cmake_minimum_required(VERSION 3.5.0 FATAL_ERROR) #CPACK_DEBIAN_<COMPONENT>_PACKAGE_NAME
+
+if (NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build {Debug, Release}." FORCE)
+  message(STATUS "Setting unspecified CMAKE_BUILD_TYPE to '${CMAKE_BUILD_TYPE}'")
+endif()
+
+if (NOT IRODS_EXTERNALS_PACKAGE_ROOT)
+  set(IRODS_EXTERNALS_PACKAGE_ROOT "/opt/irods-externals" CACHE STRING "Choose the location of iRODS external packages." FORCE)
+  message(STATUS "Setting unspecified IRODS_EXTERNALS_PACKAGE_ROOT to '${IRODS_EXTERNALS_PACKAGE_ROOT}'")
+endif()
+
+macro(IRODS_MACRO_SET_AND_CHECK_DEPENDENCY_FULL_PATH DEPENDENCY_NAME DEPENDENCY_SUBDIRECTORY)
+  if (NOT IS_DIRECTORY ${IRODS_EXTERNALS_PACKAGE_ROOT}/${DEPENDENCY_SUBDIRECTORY})
+    message(FATAL_ERROR "${DEPENDENCY_NAME} not found at ${IRODS_EXTERNALS_PACKAGE_ROOT}/${DEPENDENCY_SUBDIRECTORY}")
+  endif()
+  set(IRODS_EXTERNALS_FULLPATH_${DEPENDENCY_NAME} ${IRODS_EXTERNALS_PACKAGE_ROOT}/${DEPENDENCY_SUBDIRECTORY})
+endmacro()
+
+IRODS_MACRO_SET_AND_CHECK_DEPENDENCY_FULL_PATH(CLANG clang3.8-0)
+IRODS_MACRO_SET_AND_CHECK_DEPENDENCY_FULL_PATH(AVRO avro1.7.7-0)
+IRODS_MACRO_SET_AND_CHECK_DEPENDENCY_FULL_PATH(BOOST boost1.60.0-0)
+IRODS_MACRO_SET_AND_CHECK_DEPENDENCY_FULL_PATH(JANSSON jansson2.7-0)
+IRODS_MACRO_SET_AND_CHECK_DEPENDENCY_FULL_PATH(ZMQ zeromq4-14.1.3-0)
+IRODS_MACRO_SET_AND_CHECK_DEPENDENCY_FULL_PATH(CPPZMQ cppzmq4.1-0)
+IRODS_MACRO_SET_AND_CHECK_DEPENDENCY_FULL_PATH(ARCHIVE libarchive3.1.2-0)
+IRODS_MACRO_SET_AND_CHECK_DEPENDENCY_FULL_PATH(EPM epm4.2-0)
+
+set(CMAKE_C_COMPILER ${IRODS_EXTERNALS_FULLPATH_CLANG}/bin/clang)
+set(CMAKE_CXX_COMPILER ${IRODS_EXTERNALS_FULLPATH_CLANG}/bin/clang++)
+
+find_package(OpenSSL REQUIRED)
+
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++")
+set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -stdlib=libc++")
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -stdlib=libc++")
+add_compile_options(-nostdinc++)
+add_compile_options(-std=c++14)
+link_libraries(c++abi)
+include_directories(${IRODS_EXTERNALS_FULLPATH_CLANG}/include/c++/v1)
+
+set(
+  IRODS_API_PLUGIN_LOCKING_SERVER_COMPILE_DEFINITIONS
+  RODS_SERVER
+  ENABLE_RE
+  )
+
+set(
+    IRODS_API_PLUGIN_LOCKING_CLIENT_COMPILE_DEFINITIONS
+  )
+
+set(
+  IRODS_API_PLUGIN_LOCKING_SERVER_LINK_LIBRARIES
+  irods_server
+  irods_clerver
+  )
+
+set(
+  IRODS_API_PLUGIN_LOCKING_CLIENT_LINK_LIBRARIES
+  irods_client_api_table
+  irods_client_core
+  irods_client_plugins
+  )
+
+set(
+  IRODS_API_PLUGIN_TYPE
+  server
+  client
+  )
+
+set(
+  IRODS_API_PLUGIN_STEMS
+  zookeeper_locking
+  zookeeper_unlocking
+  )
+
+foreach(STEM ${IRODS_API_PLUGIN_STEMS} )
+    foreach(TYPE ${IRODS_API_PLUGIN_TYPE})
+      string(TOUPPER ${TYPE} TYPE_UPPERCASE)
+      string(TOUPPER ${STEM} STEM_UPPERCASE)
+      
+      set(PLUGIN_UPPERCASE ${STEM_UPPERCASE}_${TYPE_UPPERCASE})
+      set(PLUGIN           ${STEM}_${TYPE})
+
+      add_library(
+        ${PLUGIN}
+        MODULE
+        ${CMAKE_SOURCE_DIR}/src/${STEM}.cpp
+        )
+
+      target_include_directories(
+        ${PLUGIN}
+        PRIVATE
+        /usr/include/irods
+        ${CMAKE_BINARY_DIR}/iRODS/lib/core/include
+        ${CMAKE_SOURCE_DIR}/iRODS/lib/core/include
+        ${CMAKE_SOURCE_DIR}/iRODS/lib/api/include
+        ${CMAKE_SOURCE_DIR}/iRODS/server/drivers/include
+        ${CMAKE_SOURCE_DIR}/iRODS/server/core/include
+        ${CMAKE_SOURCE_DIR}/iRODS/server/icat/include
+        ${CMAKE_SOURCE_DIR}/iRODS/server/re/include
+        ${IRODS_EXTERNALS_FULLPATH_BOOST}/include
+        ${IRODS_EXTERNALS_FULLPATH_JANSSON}/include
+        ${IRODS_EXTERNALS_FULLPATH_ARCHIVE}/include
+        )
+
+      target_link_libraries(
+        ${PLUGIN}
+        PRIVATE
+        ${IRODS_API_PLUGIN_${PLUGIN_UPPERCASE}_LINK_LIBRARIES}
+        ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_filesystem.so
+        ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_system.so
+        ${IRODS_EXTERNALS_FULLPATH_ARCHIVE}/lib/libarchive.so
+        ${OPENSSL_CRYPTO_LIBRARY}
+        )
+
+      target_compile_definitions(${PLUGIN} PRIVATE ${IRODS_API_PLUGIN_${PLUGIN_UPPERCASE}_COMPILE_DEFINITIONS} ${IRODS_COMPILE_DEFINITIONS} BOOST_SYSTEM_NO_DEPRECATED)
+      target_compile_options(${PLUGIN} PRIVATE -Wno-write-strings)
+      set_property(TARGET ${PLUGIN} PROPERTY CXX_STANDARD ${IRODS_CXX_STANDARD})
+    endforeach()
+endforeach()
+
+install(
+  TARGETS
+    ${IRODS_API_PLUGINS}
+  LIBRARY
+    DESTINATION ${IRODS_HOME_DIRECTORY}/plugins/api
+    COMPONENT ${IRODS_PACKAGE_COMPONENT_SERVER_NAME}
+  )

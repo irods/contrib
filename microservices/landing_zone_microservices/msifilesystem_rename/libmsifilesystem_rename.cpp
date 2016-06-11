@@ -32,20 +32,20 @@ int get_filesystem_path(
             rodsLog( LOG_ERROR, "%s - _tgt", __FUNCTION__ );
             return SYS_INVALID_INPUT_PARAM;
         }
-        
+
         logical_path = tgt + logical_path.substr( pos+src_str.size() );
-    
+
     } else {
-        rodsLog( 
-            LOG_DEBUG, 
-            "get_filesystem_path :: src dir not found [%s] in [%s]", 
-            src, 
+        rodsLog(
+            LOG_DEBUG,
+            "get_filesystem_path :: src dir not found [%s] in [%s]",
+            src,
             fp );
     }
 
-    rodsLog( 
-        LOG_DEBUG, 
-        "get_filesystem_path :: [%s]", 
+    rodsLog(
+        LOG_DEBUG,
+        "get_filesystem_path :: [%s]",
         logical_path.c_str() );
     _out = logical_path;
 
@@ -66,7 +66,7 @@ int rename_msvc(
     }
 
     std::string new_path;
-    int ret = get_filesystem_path( 
+    int ret = get_filesystem_path(
                   _path,
                   _src,
                   _tgt,
@@ -78,6 +78,7 @@ int rename_msvc(
     return ret;
 }
 
+extern "C"
 irods::ms_table_entry* factory() {
     irods::ms_table_entry* msvc = new irods::ms_table_entry(3);
     msvc->add_operation<
@@ -85,7 +86,7 @@ irods::ms_table_entry* factory() {
         msParam_t*,
         msParam_t*,
         ruleExecInfo_t*>(
-                "",
+                "msifilesystem_rename",
                 std::function<int(
                     msParam_t*,
                     msParam_t*,
@@ -93,4 +94,3 @@ irods::ms_table_entry* factory() {
                     ruleExecInfo_t*)>(rename_msvc));
     return msvc;
 }
-

@@ -1,7 +1,6 @@
-#include "reFuncDefs.hpp"
-#include "microservice.hpp"
-#include "objInfo.hpp"
+#include "objInfo.h"
 #include "rcMisc.h"
+#include "irods_ms_plugin.hpp"
 #include <glob.h>
 #include <boost/unordered_map.hpp>
 #include <boost/filesystem.hpp>
@@ -12,8 +11,8 @@ namespace bs  = boost::system;
 namespace err = boost::system::errc;
 typedef boost::unordered_map<std::string, uintmax_t> size_map_t;
 
-bool is_it_done( 
-    const bfs::path& filepath, 
+bool is_it_done(
+    const bfs::path& filepath,
     size_map_t&      sizes ) {
     bs::error_code ec;
     if ( bfs::is_regular_file( filepath, ec ) &&
@@ -32,8 +31,8 @@ bool is_it_done(
     return true;
 }
 
-void add_file_sizes( 
-    const bfs::path& filepath, 
+void add_file_sizes(
+    const bfs::path& filepath,
     size_map_t&      sizes ) {
     bs::error_code ec;
     if ( bfs::is_regular_file( filepath, ec ) &&
@@ -60,20 +59,20 @@ int msiget_filepaths_from_glob(
         return SYS_INVALID_INPUT_PARAM;
     }
 
-    int seconds_delay = parseMspForPosInt(_seconds_delay);
-    if(!seconds_delay) {
+    const int seconds_delay = parseMspForPosInt(_seconds_delay);
+    if (seconds_delay <= 0) {
         rodsLog(LOG_ERROR, "%s - invalid _seconds_delay", __FUNCTION__);
         return SYS_INVALID_INPUT_PARAM;
     }
 
-    int second_proc_wait = parseMspForPosInt(_seconds_delay);
-    if(!second_proc_wait) {
+    const int second_proc_wait = parseMspForPosInt(_seconds_delay);
+    if (second_proc_wait <= 0) {
         rodsLog(LOG_ERROR, "%s - invalid _second_proc_wait", __FUNCTION__);
         return SYS_INVALID_INPUT_PARAM;
     }
 
-    keyValPair_t* filepaths = (keyValPair_t*)inpParam->inOutStruct;
-    if(!filepaths) {
+    keyValPair_t* filepaths = (keyValPair_t*)_filepaths->inOutStruct;
+    if (!filepaths) {
         rodsLog(LOG_ERROR, "%s - invalid _filepaths", __FUNCTION__);
         return SYS_INVALID_INPUT_PARAM;
     }
@@ -106,7 +105,7 @@ int msiget_filepaths_from_glob(
                 time_t diff_time = off_time - curr_time;
 
                 if( curr_time > off_time ) {
-                    addKeyVal( &filepaths, glob_struct.gl_pathv[i], "-d" );
+                    addKeyVal( filepaths, glob_struct.gl_pathv[i], "-d" );
 
                 } else {
                     rodsLog(
@@ -114,11 +113,11 @@ int msiget_filepaths_from_glob(
                         "msiget_filepaths_from_glob - filepath [%s] is too young by [%d] seconds",
                         glob_struct.gl_pathv[i],
                         off_time - curr_time );
-                    
+
                 }
             }
             else if ( bfs::is_directory( filepath, ec ) && ec == err::success ) {
-                addKeyVal( &filepaths, glob_struct.gl_pathv[i], "-C" );
+                addKeyVal( filepaths, glob_struct.gl_pathv[i], "-C" );
             }
         }
 
@@ -130,18 +129,16 @@ int msiget_filepaths_from_glob(
 
 }
 
+extern "C"
 irods::ms_table_entry* plugin_factory() {
-    irods::ms_table_entry* msvc = new irods::ms_table_entry();
-    mscv->add_operation(
-        "",
+    irods::ms_table_entry* msvc = new irods::ms_table_entry(4);
+    msvc->add_operation(
+        "msiget_filepaths_from_glob",
         std::function<int(
             msParam_t*,
             msParam_t*,
             msParam_t*,
             msParam_t*,
-            ruleExecInfo_t*)>(msiget_filepaths_from_glob);
+            ruleExecInfo_t*)>(msiget_filepaths_from_glob));
     return msvc;
 }
-
-
-

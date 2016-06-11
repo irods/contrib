@@ -1,10 +1,12 @@
-#include "reFuncDefs.hpp"
-#include "microservice.hpp"
-#include "objInfo.hpp"
+//#include "reFuncDefs.h"
+#include "irods_ms_plugin.hpp"
+#include "objInfo.h"
 #include "reDataObjOpr.hpp"
-#include "collCreate.hpp"
-#include "dataObjPut.hpp"
+#include "collCreate.h"
+#include "dataObjPut.h"
 #include "collection.hpp"
+#include "rcMisc.h"
+
 
 #include "boost/filesystem/operations.hpp"
 #include "boost/filesystem/path.hpp"
@@ -12,21 +14,19 @@ namespace fs = boost::filesystem;
 
 
 
-void strip_trailing_slash( 
+void strip_trailing_slash(
     std::string& _path ) {
     if( *_path.rbegin() == '/' )
         _path = _path.substr( 0, _path.size()-1 );
 
 }
 
-
-
 std::string get_logical_path(
     const std::string& _full_path,
     const std::string& _root_path,
     const std::string& _tgt_coll ) {
-    
-    std::string logical_path; 
+
+    std::string logical_path;
     fs::path fp = fs::canonical( fs::path( _full_path ) );
     fs::path rp = fs::canonical( fs::path( _root_path ) );
 
@@ -35,23 +35,23 @@ std::string get_logical_path(
     std::string tg = _tgt_coll;
     if( *tg.rbegin() != '/' )
         tg += "/";
- 
+
     logical_path = tg + fp.filename().string();
     if( !_root_path.empty() ) {
         std::string::size_type pos = _full_path.find( _root_path );
         if( std::string::npos != pos ) {
            // need the +1 to skip first slash in root path
            logical_path = tg + _full_path.substr( pos+_root_path.size()+1 );
-        
+
         }
 
-    } 
+    }
 
     strip_trailing_slash( logical_path );
 
-    rodsLog( 
-        LOG_DEBUG, 
-        "get_logical_path :: [%s]", 
+    rodsLog(
+        LOG_DEBUG,
+        "get_logical_path :: [%s]",
         logical_path.c_str() );
 
     return logical_path;
@@ -60,24 +60,24 @@ std::string get_logical_path(
 
 
 
-irods::error put_a_file( 
+irods::error put_a_file(
     rcComm_t*          _comm,
     const std::string& _file_path,
     const std::string& _logical_path,
     const std::string& _resc,
-    const std::string& _opts ) { 
+    const std::string& _opts ) {
 
-    rodsLog( 
-        LOG_DEBUG, 
-        "put_a_file :: put [%s] to [%s]", 
-        _file_path.c_str(), 
+    rodsLog(
+        LOG_DEBUG,
+        "put_a_file :: put [%s] to [%s]",
+        _file_path.c_str(),
         _logical_path.c_str() );
 
     dataObjInp_t inp;
     memset( &inp, 0, sizeof( inp ) );
-    strncpy( 
-        inp.objPath, 
-        _logical_path.c_str(), 
+    strncpy(
+        inp.objPath,
+        _logical_path.c_str(),
         MAX_NAME_LEN );
 
     int status = rcDataObjPut(
@@ -98,16 +98,16 @@ irods::error put_a_file(
 
 
 
-irods::error put_all_the_files( 
+irods::error put_all_the_files(
     rcComm_t*          _comm,
     const fs::path&    _path,
     const std::string& _root,
     const std::string& _resc,
     const std::string& _opts,
     const std::string& _tgt_coll,
-    std::string&       _out_path ) { 
+    std::string&       _out_path ) {
     irods::error final_error = SUCCESS();
-    
+
     try {
         if ( fs::is_directory( _path ) ) {
             // create a matching collection
@@ -115,18 +115,18 @@ irods::error put_all_the_files(
                                            _path.string(),
                                            _root,
                                            _tgt_coll );
-            rodsLog( 
-                LOG_DEBUG, 
-                "put_all_the_files :: create coll [%s]", 
+            rodsLog(
+                LOG_DEBUG,
+                "put_all_the_files :: create coll [%s]",
                 logical_path.c_str() );
 
             collInp_t coll_inp;
             memset( &coll_inp, 0, sizeof( coll_inp ) );
-            strncpy( coll_inp.collName, logical_path.c_str(), MAX_NAME_LEN );  
+            strncpy( coll_inp.collName, logical_path.c_str(), MAX_NAME_LEN );
             int status = rcCollCreate( _comm, &coll_inp );
             if( status < 0 && status != CATALOG_ALREADY_HAS_ITEM_BY_THAT_NAME ) {
-                rodsLog( 
-                    LOG_ERROR, 
+                rodsLog(
+                    LOG_ERROR,
                     "put_all_the_files :: rsCollCreate failed for [%s] with [%d]",
                     logical_path.c_str(),
                     status );
@@ -134,12 +134,12 @@ irods::error put_all_the_files(
             } else {
                 fs::directory_iterator end_iter;
                 fs::directory_iterator dir_itr( _path );
-                for( ; 
-                     dir_itr != end_iter; 
+                for( ;
+                     dir_itr != end_iter;
                      ++dir_itr ) {
 
                     // recurse on this new directory
-                    irods::error ret = put_all_the_files( 
+                    irods::error ret = put_all_the_files(
                                            _comm,
                                            dir_itr->path(),
                                            _root,
@@ -163,8 +163,8 @@ irods::error put_all_the_files(
         else if ( fs::is_regular_file( _path ) ) {
             std::string logical_path = get_logical_path(
                                            _path.string(),
-                                           _root, 
-                                           _tgt_coll );  
+                                           _root,
+                                           _tgt_coll );
             irods::error ret = put_a_file(
                                    _comm,
                                    _path.string(),
@@ -196,11 +196,11 @@ irods::error put_all_the_files(
         return ERROR( -1, msg.str() );
 
     }
-    
+
     _out_path = get_logical_path(
                     _path.string(),
-                    _root, 
-                    _tgt_coll );  
+                    _root,
+                    _tgt_coll );
     return final_error;
 
 } // put_all_the_files
@@ -213,33 +213,33 @@ int msiput_dataobj_or_coll(
     msParam_t* _opts,
     msParam_t* _tgt_coll,
     msParam_t* _out_path,
-    ruleExecInfo_t* ) {
+    ruleExecInfo_t* rei) {
 
-    char* path = parseMsParamForStr(_path);
+    char* path = parseMspForStr(_path);
     if(!path) {
         rodsLog(LOG_ERROR, "%s null _path", __FUNCTION__);
         return SYS_INVALID_INPUT_PARAM;
     }
 
-    char* resc = parseMsParamForStr(_resc);
+    char* resc = parseMspForStr(_resc);
     if(!resc) {
         rodsLog(LOG_ERROR, "%s null _resc", __FUNCTION__);
         return SYS_INVALID_INPUT_PARAM;
     }
 
-    char* opts = parseMsParamForStr(_opts);
+    char* opts = parseMspForStr(_opts);
     if(!opts) {
         rodsLog(LOG_ERROR, "%s null _opts", __FUNCTION__);
         return SYS_INVALID_INPUT_PARAM;
     }
 
-    char* tgt_coll = parseMsParamForStr(_tgt_coll);
+    char* tgt_coll = parseMspForStr(_tgt_coll);
     if(!tgt_coll) {
         rodsLog(LOG_ERROR, "%s null _tgt_coll", __FUNCTION__);
         return SYS_INVALID_INPUT_PARAM;
     }
 
-    char* out_coll = parseMsParamForStr(_out_coll);
+    char* out_coll = parseMspForStr(_out_path);
     if(!out_coll) {
         rodsLog(LOG_ERROR, "%s null _out_coll", __FUNCTION__);
         return SYS_INVALID_INPUT_PARAM;
@@ -252,14 +252,14 @@ int msiput_dataobj_or_coll(
 
     }
 
-    std::string tmp_coll( _tgt_coll );
-    strip_trailing_slash( tmp_coll );     
-    int status = rsMkCollR( 
+    std::string tmp_coll( tgt_coll );
+    strip_trailing_slash( tmp_coll );
+    int status = rsMkCollR(
                      rei->rsComm,
-                     "/",  
+                     "/",
                      tmp_coll.c_str() );
     if( status < 0 ) {
-        rodsLog( 
+        rodsLog(
             LOG_ERROR,
             "msiput_dataobj_or_coll - failed to make collection [%s]",
             _tgt_coll );
@@ -274,19 +274,19 @@ int msiput_dataobj_or_coll(
                      rei->rsComm->myEnv.rodsZone,
                      NO_RECONN, 0 );
     if( !comm ) {
-        rodsLog( 
+        rodsLog(
             LOG_ERROR,
             "msiput_dataobj_or_coll - rcConnect failed" );
         return 0;
     }
 
-    status = clientLogin( 
-                 comm, 
-                 0, 
+    status = clientLogin(
+                 comm,
+                 0,
                  rei->rsComm->myEnv.rodsAuthScheme );
     if ( status != 0 ) {
         rcDisconnect( comm );
-        rodsLog( 
+        rodsLog(
             LOG_ERROR,
             "msiput_dataobj_or_coll - client login failed %d",
             status );
@@ -294,7 +294,7 @@ int msiput_dataobj_or_coll(
     }
 
     std::string out_path;
-    irods::error ret = put_all_the_files( 
+    irods::error ret = put_all_the_files(
                            comm,
                            inp_path,
                            file_name,
@@ -302,19 +302,33 @@ int msiput_dataobj_or_coll(
                            opts,
                            tgt_coll,
                            out_path );
-    
+
     rcDisconnect( comm );
 
     if( !ret.ok() ) {
-        addRErrorMsg( 
-            &rei->rsComm->rError, 
-            STDOUT_STATUS, 
+        addRErrorMsg(
+            &rei->rsComm->rError,
+            ret.code(),
             ret.result().c_str() );
     }
 
-    _out_path = strdup( out_path.c_str() );
-    
+    _out_path->inOutStruct = strdup( out_path.c_str() );
+
     return ret.code();
 
 }
 
+extern "C"
+irods::ms_table_entry* plugin_factory() {
+    irods::ms_table_entry* msvc = new irods::ms_table_entry(5);
+    msvc->add_operation(
+        "msiput_dataobj_or_coll",
+        std::function<int(
+            msParam_t*,
+            msParam_t*,
+            msParam_t*,
+            msParam_t*,
+            msParam_t*,
+            ruleExecInfo_t*)>(msiput_dataobj_or_coll));
+    return msvc;
+}

@@ -239,12 +239,6 @@ int msiput_dataobj_or_coll(
         return SYS_INVALID_INPUT_PARAM;
     }
 
-    char* out_coll = parseMspForStr(_out_path);
-    if(!out_coll) {
-        rodsLog(LOG_ERROR, "%s null _out_coll", __FUNCTION__);
-        return SYS_INVALID_INPUT_PARAM;
-    }
-
     std::string file_name;
     fs::path inp_path( path );
     if( fs::is_directory( inp_path ) ) {
@@ -312,7 +306,7 @@ int msiput_dataobj_or_coll(
             ret.result().c_str() );
     }
 
-    _out_path->inOutStruct = strdup( out_path.c_str() );
+    fillMsParam( _out_path, NULL, STR_MS_T, (void*)out_path.c_str(), NULL );
 
     return ret.code();
 

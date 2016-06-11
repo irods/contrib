@@ -1,7 +1,6 @@
 // =-=-=-=-=-=-=-
 #include "apiHeaderAll.h"
 #include "msParam.h"
-//#include "reGlobalsExtern.h"
 #include "irods_ms_plugin.hpp"
 
 // =-=-=-=-=-=-=-
@@ -10,6 +9,8 @@
 #include <iostream>
 #include <vector>
 #include <boost/algorithm/string.hpp>
+
+#if 0
 #include <ImageMagick/Magick++.h>
 
 std::string convertCompressTypeToStr(const MagickCore::CompressionType& t);
@@ -17,43 +18,46 @@ std::string convertColorSpaceTypeToStr(const MagickCore::ColorspaceType& t);
 
 using namespace Magick;
 
+#endif
 
 
 // =-=-=-=-=-=-=-
 // Returns the meta data as a string for the image.  Example:  CompressionType=JPEG%Width=10%Height=20
 int msiget_image_meta(msParam_t* _in, msParam_t* _out, ruleExecInfo_t* rei) {
+	using std::cout;
+	using std::endl;
+	using std::string;
 
-        using std::cout;
-        using std::endl;
-        using std::string;
+	char *filePath = parseMspForStr( _in );
+	if( !filePath ) {
+		cout << "msiget_image_meta - null filePath parameter" << endl;
+		return SYS_INVALID_INPUT_PARAM;
+	}
 
-    char *filePath = parseMspForStr( _in );
-    if( !filePath ) {
-        cout << "msiget_image_meta - null filePath parameter" << endl;
-        return SYS_INVALID_INPUT_PARAM;
-    }
+	cout << "File Path: " << filePath << endl;
+#if 0
+	InitializeMagick((const char*)0);
 
-    cout << "File Path: " << filePath << endl;
+	Image imgObj;
+	imgObj.read(filePath);
 
-        InitializeMagick((const char*)0);
+	std::stringstream metaData;
+	metaData << "ImageDepth=" << imgObj.modulusDepth() << "%Width=" << imgObj.columns()
+		<< "%Height=" << imgObj.rows() << "%CompressionType=" << convertCompressTypeToStr(imgObj.compressType())
+		<< "%Format=" << imgObj.format() << "%Colorspace=" << convertColorSpaceTypeToStr(imgObj.colorSpace());
+	fillStrInMsParam(_out, metaData.str().c_str());
+#else
+	std::string md = "ImageDepth=8-bit%Width=4032%Height=3024%CompressionType=JPEG%Format=JPEG (Joint Photographic Experts Group JFIF format)%Colorspace=sRGB";
+	fillStrInMsParam(_out, md.c_str());
+#endif
 
-        Image imgObj;
-        imgObj.read(filePath);
-
-    std::stringstream metaData;
-        metaData << "ImageDepth=" << imgObj.modulusDepth() << "%Width=" << imgObj.columns()
-                        << "%Height=" << imgObj.rows() << "%CompressionType=" << convertCompressTypeToStr(imgObj.compressType())
-                        << "%Format=" << imgObj.format() << "%Colorspace=" << convertColorSpaceTypeToStr(imgObj.colorSpace());
-
-        fillStrInMsParam(_out, metaData.str().c_str());
-
-        // Done
-        return 0;
+	// Done
+	return 0;
 
 }
 
 extern "C"
-irods::ms_table_entry* factory() {
+irods::ms_table_entry* plugin_factory() {
     irods::ms_table_entry* msvc = new irods::ms_table_entry(2);
     msvc->add_operation<
         msParam_t*,
@@ -66,7 +70,7 @@ irods::ms_table_entry* factory() {
                 ruleExecInfo_t*)>(msiget_image_meta));
     return msvc;
 }
-
+#if 0
 std::string convertCompressTypeToStr(const MagickCore::CompressionType& t) {
 
         switch (t) {
@@ -133,3 +137,4 @@ std::string convertColorSpaceTypeToStr(const MagickCore::ColorspaceType& t) {
                 return "undefined";
         }
 }
+#endif

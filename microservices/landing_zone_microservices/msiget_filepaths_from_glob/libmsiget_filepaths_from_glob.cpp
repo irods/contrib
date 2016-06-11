@@ -71,15 +71,17 @@ int msiget_filepaths_from_glob(
         return SYS_INVALID_INPUT_PARAM;
     }
 
-    keyValPair_t* filepaths = (keyValPair_t*)_filepaths->inOutStruct;
+    keyValPair_t* filepaths = (keyValPair_t*)malloc(sizeof(keyValPair_t));
     if (!filepaths) {
         rodsLog(LOG_ERROR, "%s - invalid _filepaths", __FUNCTION__);
         return SYS_INVALID_INPUT_PARAM;
     }
 
+    memset(filepaths,0,sizeof(keyValPair_t));
+
     glob_t glob_struct;
     glob( glob_string, GLOB_MARK | GLOB_TILDE_CHECK, NULL, &glob_struct );
-    memset( &filepaths, 0, sizeof( filepaths ) );
+    
     size_map_t sizes;
     for ( size_t i = 0; i < glob_struct.gl_pathc; i++ ) {
         bfs::path filepath( glob_struct.gl_pathv[i] );
@@ -124,6 +126,8 @@ int msiget_filepaths_from_glob(
     }
 
     globfree( &glob_struct );
+    
+    fillMsParam( _filepaths, NULL, KeyValPair_MS_T, filepaths, NULL );
 
     return 0;
 

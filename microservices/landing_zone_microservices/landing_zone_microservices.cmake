@@ -22,7 +22,7 @@ foreach(MICROSERVICE ${MICROSERVICES})
   target_include_directories(
     ${MICROSERVICE}
     PRIVATE
-    /usr/include/ImageMagick
+    #/usr/include/ImageMagick
     ${IRODS_INCLUDE_DIRS}
     ${IRODS_EXTERNALS_FULLPATH_BOOST}/include
     ${IRODS_EXTERNALS_FULLPATH_JANSSON}/include
@@ -34,7 +34,7 @@ foreach(MICROSERVICE ${MICROSERVICES})
     irods_server
     irods_clerver
     irods_common
-    /usr/local/lib/libMagick++-7.Q16HDRI.so.0.0.0
+    #/usr/local/lib/libMagick++-7.Q16HDRI.so.0.0.0
     ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_filesystem.so
     ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_system.so
     )

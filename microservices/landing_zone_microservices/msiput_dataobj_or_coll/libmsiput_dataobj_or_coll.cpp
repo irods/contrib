@@ -206,17 +206,47 @@ irods::error put_all_the_files(
 } // put_all_the_files
 
 
-MICROSERVICE_BEGIN(
-    msiput_dataobj_or_coll,
-    STR,        _path,     INPUT,
-    STR,        _resc,     INPUT,
-    STR,        _opts,     INPUT,
-    STR,        _tgt_coll, INPUT,
-    STR,        _out_path, OUTPUT )
-    RE_TEST_MACRO( "    Calling msiput_dataobj_or_coll" );
+
+int msiput_dataobj_or_coll(
+    msParam_t* _path,
+    msParam_t* _resc,
+    msParam_t* _opts,
+    msParam_t* _tgt_coll,
+    msParam_t* _out_path,
+    ruleExecInfo_t* ) {
+
+    char* path = parseMsParamForStr(_path);
+    if(!path) {
+        rodsLog(LOG_ERROR, "%s null _path", __FUNCTION__);
+        return SYS_INVALID_INPUT_PARAM;
+    }
+
+    char* resc = parseMsParamForStr(_resc);
+    if(!resc) {
+        rodsLog(LOG_ERROR, "%s null _resc", __FUNCTION__);
+        return SYS_INVALID_INPUT_PARAM;
+    }
+
+    char* opts = parseMsParamForStr(_opts);
+    if(!opts) {
+        rodsLog(LOG_ERROR, "%s null _opts", __FUNCTION__);
+        return SYS_INVALID_INPUT_PARAM;
+    }
+
+    char* tgt_coll = parseMsParamForStr(_tgt_coll);
+    if(!tgt_coll) {
+        rodsLog(LOG_ERROR, "%s null _tgt_coll", __FUNCTION__);
+        return SYS_INVALID_INPUT_PARAM;
+    }
+
+    char* out_coll = parseMsParamForStr(_out_coll);
+    if(!out_coll) {
+        rodsLog(LOG_ERROR, "%s null _out_coll", __FUNCTION__);
+        return SYS_INVALID_INPUT_PARAM;
+    }
 
     std::string file_name;
-    fs::path inp_path( _path );
+    fs::path inp_path( path );
     if( fs::is_directory( inp_path ) ) {
         file_name = fs::canonical( inp_path ).parent_path( ).string();
 
@@ -233,7 +263,7 @@ MICROSERVICE_BEGIN(
             LOG_ERROR,
             "msiput_dataobj_or_coll - failed to make collection [%s]",
             _tgt_coll );
-        RETURN( status );
+        return status;
 
     }
 
@@ -247,7 +277,7 @@ MICROSERVICE_BEGIN(
         rodsLog( 
             LOG_ERROR,
             "msiput_dataobj_or_coll - rcConnect failed" );
-        RETURN( 0 );
+        return 0;
     }
 
     status = clientLogin( 
@@ -260,7 +290,7 @@ MICROSERVICE_BEGIN(
             LOG_ERROR,
             "msiput_dataobj_or_coll - client login failed %d",
             status );
-        RETURN( 0 ); 
+        return 0;
     }
 
     std::string out_path;
@@ -268,9 +298,9 @@ MICROSERVICE_BEGIN(
                            comm,
                            inp_path,
                            file_name,
-                           _resc,
-                           _opts,
-                           _tgt_coll,
+                           resc,
+                           opts,
+                           tgt_coll,
                            out_path );
     
     rcDisconnect( comm );
@@ -284,7 +314,7 @@ MICROSERVICE_BEGIN(
 
     _out_path = strdup( out_path.c_str() );
     
-    RETURN( ret.code() );
+    return ret.code();
 
-// cppcheck-suppress syntaxError
-MICROSERVICE_END
+}
+

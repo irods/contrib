@@ -47,14 +47,36 @@ void add_file_sizes(
     }
 }
 
-MICROSERVICE_BEGIN(
-    msiget_filepaths_from_glob,
-    STR,        glob_string,      INPUT,
-    INT,        seconds_delay,    INPUT,
-    INT,        second_proc_wait, INPUT,
-    KeyValPair, filepaths,        OUTPUT ALLOC )
+int msiget_filepaths_from_glob(
+    msParam_t* _glob_string,      //str
+    msParam_t* _seconds_delay,    //int
+    msParam_t* _second_proc_wait, //int
+    msParam_t* _filepaths,        //kvp
+    ruleExecInfo_t* ) {
 
-    RE_TEST_MACRO( "    Calling msiget_filepaths_from_glob" );
+    char* glob_string = parseMspForStr(_glob_string);
+    if(!glob_string) {
+        rodsLog(LOG_ERROR, "%s - invalid _glob_string", __FUNCTION__);
+        return SYS_INVALID_INPUT_PARAM;
+    }
+
+    int seconds_delay = parseMspForPosInt(_seconds_delay);
+    if(!seconds_delay) {
+        rodsLog(LOG_ERROR, "%s - invalid _seconds_delay", __FUNCTION__);
+        return SYS_INVALID_INPUT_PARAM;
+    }
+
+    int second_proc_wait = parseMspForPosInt(_seconds_delay);
+    if(!second_proc_wait) {
+        rodsLog(LOG_ERROR, "%s - invalid _second_proc_wait", __FUNCTION__);
+        return SYS_INVALID_INPUT_PARAM;
+    }
+
+    keyValPair_t* filepaths = (keyValPair_t*)inpParam->inOutStruct;
+    if(!filepaths) {
+        rodsLog(LOG_ERROR, "%s - invalid _filepaths", __FUNCTION__);
+        return SYS_INVALID_INPUT_PARAM;
+    }
 
     glob_t glob_struct;
     glob( glob_string, GLOB_MARK | GLOB_TILDE_CHECK, NULL, &glob_struct );
@@ -65,7 +87,7 @@ MICROSERVICE_BEGIN(
         add_file_sizes( filepath, sizes );
     }
     if ( sizes.empty() ) {
-        RETURN( 0 );
+        return 0;
     }
 
     sleep( seconds_delay );
@@ -104,7 +126,22 @@ MICROSERVICE_BEGIN(
 
     globfree( &glob_struct );
 
-    RETURN( 0 );
+    return 0;
 
-// cppcheck-suppress syntaxError
-MICROSERVICE_END
+}
+
+irods::ms_table_entry* plugin_factory() {
+    irods::ms_table_entry* msvc = new irods::ms_table_entry();
+    mscv->add_operation(
+        "",
+        std::function<int(
+            msParam_t*,
+            msParam_t*,
+            msParam_t*,
+            msParam_t*,
+            ruleExecInfo_t*)>(msiget_filepaths_from_glob);
+    return msvc;
+}
+
+
+

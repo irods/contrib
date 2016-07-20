@@ -79,7 +79,7 @@ int rename_msvc(
 }
 
 extern "C"
-irods::ms_table_entry* factory() {
+irods::ms_table_entry* plugin_factory() {
     irods::ms_table_entry* msvc = new irods::ms_table_entry(3);
     msvc->add_operation<
         msParam_t*,

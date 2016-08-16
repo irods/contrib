@@ -1,5 +1,5 @@
 /*
- * ils - The irods ls utility
+ * iping - App that "pings" an iRODS server. 
 */
 
 #include "rodsClient.h"

@@ -5,7 +5,7 @@ find_package(IRODS 4.2.0 EXACT REQUIRED CONFIG)
 set(CMAKE_C_COMPILER ${IRODS_EXTERNALS_FULLPATH_CLANG}/bin/clang)
 set(CMAKE_CXX_COMPILER ${IRODS_EXTERNALS_FULLPATH_CLANG}/bin/clang++)
 
-project(icommands C CXX)
+project(iping C CXX)
 
 include(${IRODS_TARGETS_PATH})
 

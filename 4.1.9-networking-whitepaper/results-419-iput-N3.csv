@@ -1,4 +1,4 @@
-MB,delay,tcp_size,parallel_buffer,N,run,seconds
+MiB,delay,tcp_size,parallel_buffer,N,run,seconds
 10240,0,big,4,3,1,9.32441711426
 10240,0,big,10,3,1,9.77747607231
 10240,0,big,25,3,1,9.78286409378

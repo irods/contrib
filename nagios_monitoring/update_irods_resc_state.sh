@@ -2,7 +2,9 @@
 
 export HOME=/var/lib/nagios
 
-echo update_irods_resc_state "$@" >> /tmp/update_resc.log
+LOGFILE=/tmp/update_resc.log
+
+echo update_irods_resc_state.sh "$@" >> $LOGFILE
 
 #export IRODS_HOST=localhost
 HOST=$1
@@ -12,8 +14,8 @@ SERVICE_ATTEMPT=$4
 
 RESOURCES=$(iquest "%s" "select RESC_NAME where RESC_LOC = '$HOST'")
 
-echo RESOURCES = $RESOURCES >> /tmp/update_resc.log
-echo SERVICES_STATE = $SERVICE_STATE >> /tmp/update_resc.log
+echo RESOURCES = $RESOURCES >> $LOGFILE
+echo SERVICES_STATE = $SERVICE_STATE >> $LOGFILE
 
 
 case "$SERVICE_STATE" in

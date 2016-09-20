@@ -8,7 +8,7 @@ STATE_CRITICAL=2
 STATE_UNKNOWN=3
 
 if [ $# -lt 3 ]; then
-    echo "Use: check_resource_use <resource name> <warning level> <critical level>"
+    echo "Use: check_resource_use.sh <resource name> <warning level> <critical level>"
     exit $STATE_UNKNOWN
 fi 
 

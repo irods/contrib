@@ -32,7 +32,7 @@ foreach(MICROSERVICE ${MICROSERVICES})
     ${MICROSERVICE}
     PRIVATE
     irods_server
-    irods_clerver
+    irods_client
     irods_common
     #/usr/local/lib/libMagick++-7.Q16HDRI.so.0.0.0
     ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_filesystem.so

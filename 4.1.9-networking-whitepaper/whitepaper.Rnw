@@ -557,8 +557,10 @@ The authors would like to thank the entire iRODS Consortium Membership as well
 as the following individuals for ideas, edits, and suggestions:
 
 \begin{itemize}
+ \item Stanley Ahalt, RENCI at UNC-Chapel Hill
  \item Matthew Astley, Wellcome Trust Sanger Institute
  \item Dale Carder, University of Wisconsin
+ \item Claris Castillo, RENCI at UNC-Chapel Hill
  \item John Constable, Wellcome Trust Sanger Institute
  \item Michael Conway, DICE at UNC-Chapel Hill
  \item Tony Edgin, CyVerse

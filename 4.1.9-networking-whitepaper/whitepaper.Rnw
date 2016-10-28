@@ -573,7 +573,7 @@ as the following individuals for ideas, edits, and suggestions:
 
 \begin{thebibliography}{1}
 
-\bibitem{slowstart} M. Allman, V. Paxson, E. Blanton (2009) {\em RFC5681: TCP Congestion Control} \url{https://tools.ietf.org/html/rfc5681}
+\bibitem{slowstart} M. Allman, V. Paxson, E. Blanton (2009) {\em RFC5681: TCP Congestion Control} \linebreak{}\url{https://tools.ietf.org/html/rfc5681}
 \bibitem{autotuning} L. Torvalds (2003) {\em Linux Kernel 2.6}
 
 \end{thebibliography}

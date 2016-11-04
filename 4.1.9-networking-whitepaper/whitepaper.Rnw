@@ -534,10 +534,13 @@ speedup <- format(round(d419comp$throughput / d418comp$throughput, digits=0), ns
 
 
 
+\clearpage
 
 \section{Conclusion}
 
-iRODS 4.1.9 transfers files up to two orders of magnitude (100x) faster than iRODS 4.1.8.
+iRODS is increasingly used in high bandwidth research and enterprise networking scenarios that include long distances and complex networking involving several hops across numerous intermediate routers.  These recent use cases have pushed the boundaries of the original optimizations within the iRODS networking code which were targeted at local area networks with relatively low latency and, therefore, a small bandwidth delay product (BDP).
+
+iRODS 4.1.9 explicitly addresses these new use cases and provides file transfers up to two orders of magnitude (100x) faster than iRODS 4.1.8.
 
 It is recommended for high-bandwidth, high-latency connections:
 
@@ -557,10 +560,8 @@ The authors would like to thank the entire iRODS Consortium Membership as well
 as the following individuals for ideas, edits, and suggestions:
 
 \begin{itemize}
- \item Stanley Ahalt, RENCI at UNC-Chapel Hill
  \item Matthew Astley, Wellcome Trust Sanger Institute
  \item Dale Carder, University of Wisconsin
- \item Claris Castillo, RENCI at UNC-Chapel Hill
  \item John Constable, Wellcome Trust Sanger Institute
  \item Michael Conway, DICE at UNC-Chapel Hill
  \item Tony Edgin, CyVerse

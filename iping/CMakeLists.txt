@@ -90,7 +90,7 @@ install(
 
 #install(
   #DIRECTORY ${CMAKE_SOURCE_DIR}/test
-#  DESTINATION var/lib/irods/clients/icommands
+#  DESTINATION usr/lib/irods/clients/icommands
 #  )
 
 set(CPACK_PACKAGE_FILE_NAME "irods-iping${IRODS_PACKAGE_FILE_NAME_SUFFIX}")

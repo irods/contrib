@@ -46,7 +46,7 @@ foreach(MICROSERVICE ${MICROSERVICES})
     TARGETS
     ${MICROSERVICE}
     LIBRARY
-    DESTINATION var/lib/irods/plugins/microservices
+    DESTINATION usr/lib/irods/plugins/microservices
     )
 endforeach()
 

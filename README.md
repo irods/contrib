@@ -11,4 +11,5 @@ A pooled collection of community-contributed code that works alongside iRODS
 * **vim-syntax**: Syntax detection for iRODS rule language in vim
 * **generate_targz_with_submodules.sh** - Generates tar.gz of git superproject, including submodules
 * **run_scanbuild.sh** - Generates clang scan-build report for main iRODS source
+* **sync_ad_accounts.sh** - Syncs LDAP/AD user list into iRODS
 * **vm-prep-ugm2015.md** - Preparation steps for 2015 User Group Meeting VirtualBox VM

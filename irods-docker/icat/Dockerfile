@@ -1,34 +1,62 @@
 FROM ubuntu:14.04
-MAINTAINER danb@renci.org
-
-RUN apt-get update ; apt-get upgrade -y
+MAINTAINER matthias.desmet@ugent.be
 
 RUN locale-gen en_US.UTF-8
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US.UTF-8
 ENV LC_ALL en_US.UTF-8
 
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y postgresql wget libcurl4-gnutls-dev
+#Set default irods config
+ENV UID=rods \
+    GID=rods \
+    ROLE=1 \
+    LOCALDB=true \
+    OBDC_DRIVER=1 \
+    DB_HOST=127.0.0.1 \
+    DB_PORT=5432 \
+    DB_NAME=ICAT \
+    DB_USR=irods \
+    DB_PSWD=rodspswd \
+    DB_PSWD_SALT=RandomStringToHash \
+    ZONE=tempZone \
+    ICAT_HOST= \
+    ZONE_PORT=1247 \
+    PARALLEL_PORT_START=20000 \
+    PARALLEL_PORT_END=20199 \
+    CONTROL_PLANE_PORT=1248 \
+    VALIDATION_URI=https://schemas.irods.org/configuration \
+    IRODS_ADMIN=rods \
+    ZONE_KEY=TEMPORARY_zone_key \
+    NEGOTIATION_KEY=TEMPORARY_32byte_negotiation_key \
+    CONTROL_PLANE_KEY=TEMPORARY__32byte_ctrl_plane_key \
+    IRODS_PSWD=rodspswd \
+    VAULT_PATH=/var/lib/irods/Vault
 
-#install iRODS
-RUN wget ftp://ftp.renci.org/pub/irods/releases/4.1.3/ubuntu14/irods-database-plugin-postgres-1.5-ubuntu14-x86_64.deb -O /tmp/irods-dbplugin.deb
-RUN wget ftp://ftp.renci.org/pub/irods/releases/4.1.3/ubuntu14/irods-icat-4.1.3-ubuntu14-x86_64.deb -O /tmp/irods-icat.deb
+#Update and upgrade packages, install dependencies
+RUN DEBIAN_FRONTEND=noninteractive \
+    apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y wget lsb-release apt-transport-https && \
+    apt-get clean
 
-# install package dependencies to prevent Docker build from erring out
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y `dpkg -I /tmp/irods-icat.deb | sed -n 's/^ Depends: //p' | sed 's/,//g'`
-RUN dpkg -i /tmp/irods-icat.deb
+#Add package repository and install
+RUN wget -qO - https://packages.irods.org/irods-signing-key.asc | apt-key add - && \
+    echo "deb [arch=amd64] https://packages.irods.org/apt/ $(lsb_release -sc) main" | tee /etc/apt/sources.list.d/renci-irods.list && \
+    apt-get update && \
+    apt-get install -y irods-server irods-database-plugin-postgres && \
+    apt-get clean
 
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y `dpkg -I /tmp/irods-dbplugin.deb | sed -n 's/^ Depends: //p' | sed 's/,//g'`
-RUN dpkg -i /tmp/irods-dbplugin.deb
+#Create requisite folders
+RUN umask 002 && mkdir -p /export/Vault
 
-RUN mkdir /opt/irods
-
-ADD ./genresp.sh /opt/irods/genresp.sh
-ADD ./setupdb.sh /opt/irods/setupdb.sh
-ADD ./config.sh /opt/irods/config.sh
-ADD ./bootstrap.sh /opt/irods/bootstrap.sh
+# Add scripts
+ADD ./scripts/genresp.sh /opt/irods/genresp.sh
+ADD ./scripts/setupdb.sh /opt/irods/setupdb.sh
+ADD ./scripts/bootstrap.sh /opt/irods/bootstrap.sh
 RUN chmod a+x /opt/irods/*.sh
 
-EXPOSE 1247
-#EXPOSE 1248
-ENTRYPOINT [ "/opt/irods/bootstrap.sh" ]
+# Link default vault to export dir
+RUN ln -s /var/lib/irods/Vault /export/Vault
+
+EXPOSE 1247 1248
+#ENTRYPOINT [ "/opt/irods/bootstrap.sh" ]

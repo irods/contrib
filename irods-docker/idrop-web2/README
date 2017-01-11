@@ -1,0 +1,36 @@
+This set of files can be used to create a Docker image of a standalone iRODS iCAT server,
+ an iCAT server paired with the iDrop Web 2 web-based graphical client, or a standalone
+ iRODS client with iCommands installed.
+
+To create and instantiate the server, use the following instructions.
+
+1. Locate the files in a single directory (known below as "path")..
+2. Build the image you will need:
+   - "docker build -t [repo]/icat:4.1.3 [path]/icat"
+   - "docker build -t [repo]/idrop-web2:4.1.3 [path]/idrop-web2"
+   - "docker build -t [repo]/icommands:4.1.3 [path]/icommands"
+3. Use "docker run -t [repo/tag]" to start the docker image.
+
+Notes:
+* The iCAT image exposes port 1247 for iRODS.
+* iRODS and Postgres passwords are randomly generated at runtime. You may specify an iRODS
+  rodsadmin password as a command line argument to "docker run".
+* These images do not include supervisord or sshd. To access a terminal use "docker exec"
+  e.g., "docker exec -ti [container-id] /bin/bash"
+* The iDrop Web 2 image exposes ports 80 and 1247.
+* The iDrop Web 2 image uses a script to update the URL of iDrop Web links. The URL stub
+  will be of the form http://[$DOCKER_HOSTNAME]:[$DOCKER_PORT80]. You must specify
+  these variables on the "docker run" commandline.
+
+Example syntax:
+
+iCAT only (loaded as background process)-
+  docker run -p [port 1247 redirect]:1247 -d -t irods/icat:4.1.3 [new rodsadmin password]
+
+iCAT + iDrop Web 2 (loaded as background process)-
+  docker run -p [port 1247 redirect]:1247 -p [port 80 redirect]:80 \
+  -e DOCKER_PORT80=[port 80 redirect] -e DOCKER_HOSTNAME=[hostname of the host machine] \
+  -d -t irods/idrop-web2:4.1.3 [new rodsadmin password]
+
+iCommands (loaded as foreground process)-
+  docker run -ti irods/icommands:4.1.3

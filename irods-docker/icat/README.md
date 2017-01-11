@@ -1,6 +1,6 @@
-# docker-iRODS
+# docker-iRODS-iCAT
 
-The docker iRODS Image is an easy distributable, core iRODS deployment. It can be used for testing, teaching and production.
+The docker iRODS iCAT Image is an easy distributable, core iRODS deployment. It can be used for testing, teaching and production.
 
 This image runs a self-contained iRODS server and postgresql database.
 
@@ -56,14 +56,14 @@ The following options can be set as environmental values on startup:
 
 ### Build image
 ```
-cd docker-irods && \
-docker build -t irods:latest --rm .
+cd icat && \
+docker build -t irods/icat:4.2.0 --rm .
 ```
 
 ### Run image
 To run this docker image, simply do
 ```
-docker run -d -p 1247:1247 irods:latest
+docker run -d -p 1247:1247 irods/icat:4.2.0
 ```
 This will create an empty iRODS repository, which connects to the internal database. Without further configuration, all data will be stored inside the docker image in `$VAULT_PATH`.
 Please note that ALL DATA in this setup is NON PERSISTENT. This means that once the image is removed, all data and database will be lost.
@@ -71,7 +71,7 @@ Please note that ALL DATA in this setup is NON PERSISTENT. This means that once 
 If all default parameters are used, all files will be stored in `/export/Vault`.
 To mount the `/export` directory, start the image with
 ```
-docker run -d -p 1247:1247 -v /your/irods/data/dir/:/export irods:latest
+docker run -d -p 1247:1247 -v /your/irods/data/dir/:/export irods/icat:4.2.0
 ```
 
 ### Configuring the image for production
@@ -98,7 +98,7 @@ docker run -d -p 1247:1247 \
 -e DB_NAME=ICAT \
 -e DB_USR=irods \
 -e DB_PSWD=rodspswd \
-irods:latest
+irods/icat:4.2.0
 ```
 Random keys can be generated with:
 ```

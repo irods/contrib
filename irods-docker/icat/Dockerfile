@@ -59,4 +59,4 @@ RUN chmod a+x /opt/irods/*.sh
 RUN ln -s /var/lib/irods/Vault /export/Vault
 
 EXPOSE 1247 1248
-#ENTRYPOINT [ "/opt/irods/bootstrap.sh" ]
+ENTRYPOINT [ "/opt/irods/bootstrap.sh" ]

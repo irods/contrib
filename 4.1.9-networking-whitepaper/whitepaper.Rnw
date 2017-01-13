@@ -66,7 +66,7 @@ This whitepaper demonstrates the recent gains in configurability and
 throughput as well as defines best practice for administrators and organizations using iRODS.
 
 \section{Introduction}
-The Integrated Rule-Oriented Data System (iRODS) is open source data management software used by research organizations and government agencies worldwide.  It provides a unified namespace across distributed, heterogeneous storage technologies and a rule engine to enforce an organization's data managament policies.
+The Integrated Rule-Oriented Data System (iRODS) is open source data management software used by research organizations and government agencies worldwide.  It provides a unified namespace across distributed, heterogeneous storage technologies and a rule engine to enforce an organization's data management policies.
 
 iRODS is increasingly used in high bandwidth research and enterprise networking scenarios that include long distances and complex networking involving several hops across numerous intermediate routers.  These recent use cases have pushed the boundaries of the original optimizations within the iRODS networking code which were targeted at local area networks with relatively low latency and, therefore, a small bandwidth delay product (BDP).
 

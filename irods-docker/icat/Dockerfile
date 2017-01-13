@@ -30,7 +30,7 @@ ENV UID=rods \
     NEGOTIATION_KEY=TEMPORARY_32byte_negotiation_key \
     CONTROL_PLANE_KEY=TEMPORARY__32byte_ctrl_plane_key \
     IRODS_PSWD=rodspswd \
-    VAULT_PATH=export/Vault
+    VAULT_PATH=/export/Vault
 
 #Update and upgrade packages, install dependencies
 RUN DEBIAN_FRONTEND=noninteractive \

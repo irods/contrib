@@ -60,9 +60,11 @@ END_PREINSTALL
 chown $$IRODS_SERVICE_ACCOUNT_NAME:$$IRODS_SERVICE_GROUP_NAME ${IRODS_HOME_DIR}/plugins/microservices/libmsiforce_resource.so
 chown $$IRODS_SERVICE_ACCOUNT_NAME:$$IRODS_SERVICE_GROUP_NAME ${IRODS_HOME_DIR}/plugins/microservices/libmsifree_microservice_out.so
 chown $$IRODS_SERVICE_ACCOUNT_NAME:$$IRODS_SERVICE_GROUP_NAME ${IRODS_HOME_DIR}/plugins/microservices/libmsiencrypt_replica.so
+chown $$IRODS_SERVICE_ACCOUNT_NAME:$$IRODS_SERVICE_GROUP_NAME ${IRODS_HOME_DIR}/plugins/microservices/libmsicompound_archive_object.so
 chown $$IRODS_SERVICE_ACCOUNT_NAME:$$IRODS_SERVICE_GROUP_NAME ${IRODS_HOME_DIR}/rules
 chown $$IRODS_SERVICE_ACCOUNT_NAME:$$IRODS_SERVICE_GROUP_NAME ${IRODS_HOME_DIR}/rules/test_msifree_microservice_out.r
 chown $$IRODS_SERVICE_ACCOUNT_NAME:$$IRODS_SERVICE_GROUP_NAME ${IRODS_HOME_DIR}/rules/test_msiencrypt_replica.r
+chown $$IRODS_SERVICE_ACCOUNT_NAME:$$IRODS_SERVICE_GROUP_NAME ${IRODS_HOME_DIR}/rules/move2DA.r
 END_POSTINSTALL
 
 # =-=-=-=-=-=-=-
@@ -108,6 +110,8 @@ f 644 root root ${IRODS_HOME_DIR}/plugins/microservices/libmsiforce_resource.so 
 #f 644 root root ${IRODS_HOME_DIR}/plugins/microservices/libmsisync_to_archive.so ./msisync_to_archive/libmsisync_to_archive.so
 f 644 root root ${IRODS_HOME_DIR}/plugins/microservices/libmsifree_microservice_out.so ./msifree_microservice_out/libmsifree_microservice_out.so
 f 644 root root ${IRODS_HOME_DIR}/plugins/microservices/libmsiencrypt_replica.so ./msiencrypt_replica/libmsiencrypt_replica.so
+f 644 root root ${IRODS_HOME_DIR}/plugins/microservices/libmsicompound_archive_object.so ./msicompound_archive_object/libmsicompound_archive_object.so
 d 755 root root ${IRODS_HOME_DIR}/rules -
 f 644 root root ${IRODS_HOME_DIR}/rules/test_msifree_microservice_out.r ./msifree_microservice_out/test_msifree_microservice_out.r
 f 644 root root ${IRODS_HOME_DIR}/rules/test_msiencrypt_replica.r ./msiencrypt_replica/test_msiencrypt_replica.r
+f 644 root root ${IRODS_HOME_DIR}/rules/move2DA.r ./msicompound_archive_object/move2DA.r

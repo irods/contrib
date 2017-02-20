@@ -1,0 +1,593 @@
+\documentclass[conference]{IEEEtran}
+
+\usepackage[letterpaper, margin=1in]{geometry}
+\usepackage{cite}
+\usepackage{graphicx}
+\usepackage{verbatim}
+\usepackage[parfill]{parskip}
+\usepackage{url}
+\usepackage[format=plain, justification=centerfirst]{caption}
+\usepackage{courier}
+\usepackage{upquote}
+\usepackage{listings}
+\lstset{basicstyle=\footnotesize\ttfamily,breaklines=true,framextopmargin=50pt}
+
+\begin{document}
+
+\title{iRODS Networking Performance: Simulating A High-Bandwidth, High-Latency Use Case}
+
+\author{
+\IEEEauthorblockN{Terrell G. Russell}
+\IEEEauthorblockA{Renaissance Computing Institute (RENCI)\\
+University of North Carolina at Chapel Hill\\
+Chapel Hill, NC\\
+unc@terrellrussell.com}
+\and
+\IEEEauthorblockN{Jason M. Coposky}
+\IEEEauthorblockA{Renaissance Computing Institute (RENCI)\\
+University of North Carolina at Chapel Hill\\
+Chapel Hill, NC\\
+jasonc@renci.org}
+\and
+\IEEEauthorblockN{Benjamin Keller}
+\IEEEauthorblockA{Renaissance Computing Institute (RENCI)\\
+University of North Carolina at Chapel Hill\\
+Chapel Hill, NC\\
+kellerb@renci.org}
+}
+\author{
+\IEEEauthorblockN{Terrell G. Russell\IEEEauthorrefmark{1},
+Jason M. Coposky,
+Benjamin Keller}
+\IEEEauthorblockA{Renaissance Computing Institute (RENCI)\\
+University of North Carolina at Chapel Hill\\
+Chapel Hill, NC\\
+\IEEEauthorrefmark{1}unc@terrellrussell.com}
+}
+
+
+\maketitle
+
+
+<< echo=FALSE >>=
+# global settings
+library(lattice)
+rowcolors=c(rep(c(rep(c("#ffe5cc"),6),rep(c("#6bafef"),6)),3))
+alternatingstripstyle <- function(which.panel, factor.levels, ...){
+  panel.rect(0,0,1,1,col=rowcolors[which.panel],border=1)
+  panel.text(x=0.5,y=0.5,cex=0.6,lab=factor.levels[which.panel])
+}
+irodsbufferlabels=c('4M','10M','25M','50M','75M','100M','200M','400M')
+# default strip colors ... "#ffe5cc" "#ccffcc" "#ccffff" "#cce6ff"
+@
+
+\begin{abstract}
+
+iRODS is increasingly used in high bandwidth research and enterprise networking scenarios that include long distances and complex networking involving several hops across numerous intermediate routers.
+
+The recent iRODS 4.1.9 release explicitly addresses these new use cases and provides up to 100x speedup for sustained maximum bandwidth over high bandwidth, high latency connections.
+
+This paper demonstrates the recent gains in configurability and throughput as well as defines best practice for administrators and organizations using iRODS.
+\end{abstract}
+
+\section{Introduction}
+
+iRODS 4.1.9 presents a significant improvement over 4.1.8 (and all prior versions).
+
+With proper tuning of the Linux TCP kernel settings, iRODS 4.1.9, released July 28, 2016, can transfer files 100x more quickly than iRODS 4.1.8 at high latency (100ms RTT).
+
+The Integrated Rule-Oriented Data System (iRODS) is open source data management software used by research organizations and government agencies worldwide.  It provides a unified namespace across distributed, heterogeneous storage technologies and a rule engine to enforce an organization's data management policies.
+
+iRODS is increasingly used in high bandwidth research and enterprise networking scenarios that include long distances and complex networking involving several hops across numerous intermediate routers.  These recent use cases have pushed the boundaries of the original optimizations within the iRODS networking code which were targeted at local area networks with relatively low latency and, therefore, a small bandwidth delay product (BDP).
+
+iRODS 4.1.9 explicitly addresses these new use cases and provides a significant improvement in the sustained maximum bandwidth over high bandwidth, high latency connections.
+
+iRODS networking has historically been managed through compile-time \texttt{\#define} settings.  Beginning with iRODS 4.1.0, these compile-time settings have been extracted and are now controlled through configuration variables in \texttt{server\_config.json}.
+
+As recently as iRODS 4.1.8, the TCP send and receive window sizes were also set within the compiled iRODS server code.  This defining of the window sizes had the effect of overriding the Linux kernel's TCP auto tuning\cite{autotuning} and severely reducing overall throughput over higher latency connections.  Low latency connections were not affected.
+
+In this paper, iRODS 4.1.8 and 4.1.9 networking is compared across six variables: transfer command, file size, network RTT, TCP maximum buffer size, iRODS buffer size, and parallel threads.
+
+\section{Test Setup}
+
+This set of tests were performed on two physical computers running CentOS 7.2.  Each machine had 32 processors, 256GiB of RAM, and rotational disks capable of writing 165MiB/s.  They were installed in the same rack and held a 10Gbps point-to-point connection.
+
+The values used for the $2*6*3*2*3*6 = \Sexpr{2*6*3*2*3*6}$ combinations initially tested are included in Table \ref{variables-tested}.  Each combination was run 3 times.  Median transfer times are reported.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{ll}
+Variable & Value \\
+\hline
+Transfer Command & iput, iget \\
+File Size & 35MiB, 100MiB, 500MiB, 1GiB, 5GiB, 10GiB   \\
+Network RTT (delay) & \textasciitilde0ms, 50ms, 100ms \\
+TCP Buffers & default, tuned  \\
+iRODS Buffers & 4MiB, 50MiB, 100MiB \\
+Parallel Threads & Streaming, 2, 3, 4, 8, 16
+\end{tabular}
+\caption{Independent Variables representing the \\1296 combinations tested in Sections \ref{4.1.8} and \ref{4.1.9}}
+\label{variables-tested}
+\end{table}
+
+The unmodified network latency was 0.2 milliseconds.  For the purposes of this analysis, 0.2ms was coded as 0ms. Additional artificial network delays of 50ms and 100ms were introduced and managed via the traffic control binary (\texttt{tc}).  Some examples of \texttt{tc} use are listed here:
+
+\begin{lstlisting}
+Add 100ms delay
+$ sudo tc qdisc add dev eth1 root netem delay 100ms
+
+Delete the delay
+$ sudo tc qdisc del dev eth1 root netem
+\end{lstlisting}
+
+The max TCP buffers on each machine were either the default, or they were increased (tuned) to 100MiB.
+
+\begin{lstlisting}
+Default TCP Buffers
+$ sudo sysctl net.ipv4.tcp_rmem='4096        87380   6291456'
+$ sudo sysctl net.ipv4.tcp_wmem='4096        16384   4194304'
+$ sudo sysctl net.core.rmem_max=212992
+$ sudo sysctl net.core.wmem_max=212992
+
+Tuned TCP Buffers
+$ sudo sysctl net.ipv4.tcp_rmem='4096        87380   104857600'
+$ sudo sysctl net.ipv4.tcp_wmem='4096        87380   104857600'
+$ sudo sysctl net.core.rmem_max=104857600
+$ sudo sysctl net.core.wmem_max=104857600
+\end{lstlisting}
+
+The iRODS Buffers were changed on each machine by manipulating the variable named \texttt{irods\_transfer\_buffer\_size\_for\_}
+\texttt{parallel\_transfer\_in\_megabytes}.
+
+Each of the six variables were handled by the python test harness.  The python test harness
+manipulated the settings on both ends of the connection, transferred a file (\texttt{iput} or \texttt{iget}) of various sizes
+(35MiB, 100MiB, 500MiB, 1GiB, 5GiB, and 10GiB) with a varying number of threads (Streaming, 2, 3, 4, 8, 16), and then removed the file. For example:
+
+\begin{lstlisting}
+$ iput -N3 5Gfile
+\end{lstlisting}
+
+The elapsed time for each transfer was recorded into a comma separated values file (csv).
+The figures were generated with R.  All of the test harness code and graph generation code used
+is available at \url{https://github.com/irods/contrib}.
+
+
+\subsection{iperf3 Baseline}
+
+\texttt{iperf3} was used to generate a baseline throughput rate at \textasciitilde0ms, 50ms, and 100ms.
+
+\texttt{iperf3} was configured for 15 seconds of memory-to-memory testing, omitting the first 15 seconds of possible TCP Slow Start\cite{slowstart}, and running in parallel to 1-5 ports listening on the other machine.  The other parameters forced verbose output in megabytes.  The values reported in Table \ref{tab:iperf3-baseline} and Figure \ref{fig:iperf3-manual} are the median of 5 samples.
+
+\begin{lstlisting}
+$ for i in $(seq 5); do iperf3 -p 2010$i -c 10g1 -t15 -O30 -V -fM & done
+\end{lstlisting}
+
+<< echo=FALSE >>=
+raw = read.csv("iperf-manual.csv")
+d <- aggregate(raw[,4], raw[,1:2], FUN = median, na.rm=TRUE)
+colnames(d)[3] <- "median_throughput"
+
+# table data
+t.1      <- subset(d, threads == "1")
+t.2      <- subset(d, threads == "2")
+t.3      <- subset(d, threads == "3")
+t.4      <- subset(d, threads == "4")
+t.5      <- subset(d, threads == "5")
+t.1t     <- format(round(t.1$median_throughput, digits=1), nsmall=1)
+t.2t     <- format(round(t.2$median_throughput, digits=1), nsmall=1)
+t.3t     <- format(round(t.3$median_throughput, digits=1), nsmall=1)
+t.4t     <- format(round(t.4$median_throughput, digits=1), nsmall=1)
+t.5t     <- format(round(t.5$median_throughput, digits=1), nsmall=1)
+@
+
+\begin{table}[h]
+\centering
+\begin{tabular}{r|rrr}
+   & \textasciitilde0ms delay & 50ms delay & 100ms delay \\
+   & MBytes/sec & MBytes/sec & MBytes/sec \\
+ \hline
+ 5 Threads & \Sexpr{t.5t[1]} & \Sexpr{t.5t[2]} & \Sexpr{t.5t[3]} \\
+ 4 Threads & \Sexpr{t.4t[1]} & \Sexpr{t.4t[2]} & \Sexpr{t.4t[3]} \\
+ 3 Threads & \Sexpr{t.3t[1]} & \Sexpr{t.3t[2]} & \Sexpr{t.3t[3]} \\
+ 2 Threads & \Sexpr{t.2t[1]} & \Sexpr{t.2t[2]} & \Sexpr{t.2t[3]} \\
+ 1 Thread  & \Sexpr{t.1t[1]} & \Sexpr{t.1t[2]} & \Sexpr{t.1t[3]} \\
+\end{tabular}
+\caption{Median iperf3 Maximum Sustained Throughput, n=5}
+\label{tab:iperf3-baseline}
+\end{table}
+
+
+The sustained throughput at \textasciitilde0ms RTT was very consistent and near capacity for a 10Gbps connection.  There was a \textasciitilde10\% reduction in throughput at 50ms RTT and another 20-30\% reduction at 100ms RTT.  A single thread only supported \textasciitilde500 MBytes/sec at 100ms RTT and adding more threads increased the throughput up to \textasciitilde800 MBytes/sec.
+
+<<iperf3-manual, echo=FALSE, fig.lp="fig:", fig.cap="iperf3 @ 10Gbps point-to-point, 1-5 Parallel TCP Threads", fig.align="center", fig.pos="h", fig.asp=0.6 >>=
+d$threads <- ordered(d$threads, levels = c(5,4,3,2,1), labels = c( "5 Threads", "4 Threads", "3 Threads", "2 Threads", "1 Thread"))
+xyplot( median_throughput ~ delay, d, groups=threads, type = "b", ylab = "Throughput (MBytes/sec)", xlab = "Network RTT (milliseconds)", auto.key = list(space="right", columns=1), ylim=c(-100,1200))
+@
+
+
+
+\section{iRODS 4.1.8}
+\label{4.1.8}
+
+iRODS 4.1.8 has a very predictable, but unbalanced, network performance profile (Figures \ref{fig:418-iput} and \ref{fig:418-iget}).
+
+At low-latency (\textasciitilde0ms), iRODS 4.1.8 moves the file at a significant portion of the available connection.
+
+But once a delay is introduced, and the TCP buffers remain at their default settings, the TCP buffers
+are constantly full while the network is starved because each end waits on the other server
+before sending the next buffer.  The transfer time only decreases
+when multiple threads are used to push more data onto the network at a time.
+
+Increasing the iRODS Buffer Size (moving from the bottom rows to the top rows) has no effect since the Default
+TCP Buffers (salmon rows) are much too small to take any advantage of a larger iRODS Buffer, and the Tuned TCP Buffers (blue rows)
+take as much advantage as they can, even when the iRODS Buffers are set to the default 4MiB.
+
+The streaming scenario (blue points) is the worst case for all of these panels (with delay) due to the framing done by the iRODS Protocol
+on every buffer and the fact that the iRODS Protocol requires a couple round trips for every buffer to be acknowledged.
+
+Across the file sizes (35MiB, 100MiB, 500MiB, 1GiB, 5GiB, 10GiB) (moving from the left to the right) for both \texttt{iput} and \texttt{iget}, the relationship between file size and transfer time is strictly linear.
+
+
+
+<<418-iput, echo=FALSE, fig.lp="fig:", fig.cap="4.1.8 iput, n=3 \\\\ \\vspace{10pt} Each panel above has a compressed label.  A label of \\texttt{4M:Tuned:1G} denotes an iRODS Buffer Size of 4MiB, Tuned TCP Buffers, and a 1GiB file transfer.">>=
+raw = read.csv("results-418-iput.csv")
+d <- aggregate(raw[,7], raw[,1:5], FUN = median, na.rm=TRUE)
+colnames(d)[6] <- "median_seconds"
+d418iput <- d
+d$parallel_buffer <- ordered(d$parallel_buffer, levels = c(4,10,25,50,75,100,200,400), labels = irodsbufferlabels)
+d$tcp_size <- ordered(d$tcp_size, levels = c('default','big'), labels = c('Default','Tuned'))
+d$N <- ordered(d$N, levels = c(1,2,3,4,8,16), labels = c('Streaming','2 Threads','3 Threads','4 Threads','8 Threads','16 Threads'))
+d$MiB <- ordered(d$MiB, levels = c(35,100,500,1024,5120,10240), labels = c('35M','100M','500M','1G','5G','10G'))
+
+xyplot( median_seconds ~ delay | parallel_buffer:tcp_size:MiB, d, groups = N, main = "iRODS 4.1.8 - iput", type = "b", strip=alternatingstripstyle, ylab = "Transfer Time (seconds)", xlab = "Network RTT (milliseconds)", auto.key = list(space="top", columns=2, pt.cex=1, cex=.8), lattice.options = modifyList(lattice.options(), list(skip.boundary.labels = 0)), xlim = c(-10,110), ylim = c(-500,6500), layout = c(6,6), par.strip.text = list(cex=.6), scales = list(x=list(at=seq(0,100,50),labels=c(0,50,100)), y=list(at=seq(0,6000,3000),labels=c(0,3000,6000))))
+
+@
+
+
+<<418-iget, echo=FALSE, fig.lp="fig:", fig.cap="4.1.8 iget, n=3 \\\\ \\vspace{10pt} Each panel above has a compressed label.  A label of \\texttt{4M:Tuned:1G} denotes an iRODS Buffer Size of 4MiB, Tuned TCP Buffers, and a 1GiB file transfer.">>=
+raw = read.csv("results-418-iget.csv")
+d <- aggregate(raw[,7], raw[,1:5], FUN = median, na.rm=TRUE)
+colnames(d)[6] <- "median_seconds"
+d418iget <- d
+d$parallel_buffer <- ordered(d$parallel_buffer, levels = c(4,10,25,50,75,100,200,400),labels = irodsbufferlabels)
+d$tcp_size <- ordered(d$tcp_size, levels = c('default','big'), labels = c('Default','Tuned'))
+d$N <- ordered(d$N, levels = c(1,2,3,4,8,16), labels = c('Streaming','2 Threads','3 Threads','4 Threads','8 Threads','16 Threads'))
+d$MiB <- ordered(d$MiB, levels = c(35,100,500,1024,5120,10240), labels = c('35M','100M','500M','1G','5G','10G'))
+
+xyplot( median_seconds ~ delay | parallel_buffer:tcp_size:MiB, d, groups = N, main = "iRODS 4.1.8 - iget", type = "b", strip=alternatingstripstyle, ylab = "Transfer Time (seconds)", xlab = "Network RTT (milliseconds)", auto.key = list(space="top", columns=2, pt.cex=1, cex=.8), lattice.options = modifyList(lattice.options(), list(skip.boundary.labels = 0)), xlim = c(-10,110), ylim = c(-500,6500), layout = c(6,6), par.strip.text = list(cex=.6), scales = list(x=list(at=seq(0,100,50),labels=c(0,50,100)), y=list(at=seq(0,6000,3000),labels=c(0,3000,6000))))
+
+@
+
+
+
+
+\section{iRODS 4.1.9}
+\label{4.1.9}
+
+iRODS 4.1.9 presents a significant improvement across the board for higher latency connections (Figures \ref{fig:419-iput} and \ref{fig:419-iget}).
+
+When the latency is low (\textasciitilde0ms), iRODS 4.1.9 moves files as quickly as the network will allow.
+
+Similar to 4.1.8, once a latency is added to the connection and the TCP Buffers are at their
+default settings (salmon rows), iRODS can most effectively increase throughput by increasing the number of threads.
+This shows the well documented knowledge that the default linux kernel TCP settings are not designed
+for high-bandwidth, high-latency connections.  Increasing the iRODS Buffers from 4MiB to 50MiB (bottom third to middle third) does reduce
+the transfer time by up to 30\% for the streaming use case (blue points) as the larger iRODS Buffer fills the available default TCP
+Buffers (salmon rows) and is optimized by the dynamic kernel auto tuning.
+
+After the TCP Buffers are increased (blue rows), the throughput is increased dramatically.  The
+Tuned TCP Buffers and 4MiB iRODS Buffer row (bottom blue row) illustrates what happens when the
+iRODS Buffer size is small enough to starve the network and waste the available bandwidth.
+
+For the 500MiB and larger file transfers (rightmost four columns), the tuned TCP Buffers panels (blue rows) present some interesting
+inversion.  When the iRODS Buffer is increased to 50MiB and 100MiB, since the network is fast enough to
+support the transfer fairly quickly, the additional overhead of managing more threads is
+greater than just sending the file with fewer threads.  When the iRODS Buffer is held to 4MiB (bottom blue row), it remains the
+limiting factor for the streaming use case (blue points) and takes the longest time since every buffer is framed by the
+iRODS protocol and must wait for the TCP back and forth.
+
+The Tuned TCP Buffers and 100MiB iRODS Buffer panel (top row of Figures \ref{fig:419-iput} and \ref{fig:419-iget}) demonstrates
+the best case scenario and is investigated more thoroughly in Figure \ref{fig:419-10gb-threads}.
+
+
+
+
+<<419-iput, echo=FALSE, fig.lp="fig:", fig.cap="4.1.9 iput, n=3 \\\\ \\vspace{10pt} Each panel above has a compressed label.  A label of \\texttt{4M:Tuned:1G} denotes an iRODS Buffer Size of 4MiB, Tuned TCP Buffers, and a 1GiB file transfer.">>=
+raw = read.csv("results-419-iput.csv")
+d <- aggregate(raw[,7], raw[,1:5], FUN = median, na.rm=TRUE)
+colnames(d)[6] <- "median_seconds"
+d$parallel_buffer <- ordered(d$parallel_buffer, levels = c(4,10,25,50,75,100,200,400),labels = irodsbufferlabels)
+d$tcp_size <- ordered(d$tcp_size, levels = c('default','big'), labels = c('Default','Tuned'))
+d$N <- ordered(d$N, levels = c(1,2,3,4,8,16), labels = c('Streaming','2 Threads','3 Threads','4 Threads','8 Threads','16 Threads'))
+d$MiB <- ordered(d$MiB, levels = c(35,100,500,1024,5120,10240), labels = c('35M','100M','500M','1G','5G','10G'))
+
+xyplot( median_seconds ~ delay | parallel_buffer:tcp_size:MiB, d, groups = N, main = "iRODS 4.1.9 - iput", type = "b", strip=alternatingstripstyle, ylab = "Transfer Time (seconds)", xlab = "Network RTT (milliseconds)", auto.key = list(space="top", columns=2, pt.cex=1, cex=.8), lattice.options = modifyList(lattice.options(), list(skip.boundary.labels = 0)), xlim = c(-10,110), ylim = c(-50,650), layout = c(6,6), par.strip.text = list(cex=.6), scales = list(x=list(at=seq(0,100,50),labels=c(0,50,100)), y=list(at=seq(0,600,300),labels=c(0,300,600))))
+@
+
+
+<<419-iget, echo=FALSE, fig.lp="fig:", fig.cap="4.1.9 iget, n=3 \\\\ \\vspace{10pt} Each panel above has a compressed label.  A label of \\texttt{4M:Tuned:1G} denotes an iRODS Buffer Size of 4MiB, Tuned TCP Buffers, and a 1GiB file transfer.">>=
+raw = read.csv("results-419-iget.csv")
+d <- aggregate(raw[,7], raw[,1:5], FUN = median, na.rm=TRUE)
+colnames(d)[6] <- "median_seconds"
+d$parallel_buffer <- ordered(d$parallel_buffer, levels = c(4,10,25,50,75,100,200,400),labels = irodsbufferlabels)
+d$tcp_size <- ordered(d$tcp_size, levels = c('default','big'), labels = c('Default','Tuned'))
+d$N <- ordered(d$N, levels = c(1,2,3,4,8,16), labels = c('Streaming','2 Threads','3 Threads','4 Threads','8 Threads','16 Threads'))
+d$MiB <- ordered(d$MiB, levels = c(35,100,500,1024,5120,10240), labels = c('35M','100M','500M','1G','5G','10G'))
+
+xyplot( median_seconds ~ delay | parallel_buffer:tcp_size:MiB, d, groups = N, main = "iRODS 4.1.9 - iget", type = "b", strip=alternatingstripstyle, ylab = "Transfer Time (seconds)", xlab = "Network RTT (milliseconds)", auto.key = list(space="top", columns=2, pt.cex=1, cex=.8), lattice.options = modifyList(lattice.options(), list(skip.boundary.labels = 0)), xlim = c(-10,110), ylim = c(-50,650), layout = c(6,6), par.strip.text = list(cex=.6), scales = list(x=list(at=seq(0,100,50),labels=c(0,50,100)), y=list(at=seq(0,600,300),labels=c(0,300,600))))
+
+@
+
+
+
+
+
+
+
+\section{Best Practice}
+
+The most consistently fast way to \texttt{iput} and \texttt{iget} files via iRODS 4.1.9 is with 3 Threads, the iRODS Buffer set to 100MiB, and Tuned TCP Buffers.
+
+\subsection{Threads}
+
+Figure \ref{fig:419-10gb-threads} investigates the best number of threads to maximize throughput for \texttt{iput} and \texttt{iget}.  The fastest transfer times were most consistently achieved with 3 Threads.
+
+<<419-10gb-threads, echo=FALSE, fig.lp="fig:", fig.cap="4.1.9 w/ Tuned TCP Buffers, 100MiB iRODS Buffer, n=10, Transferring with 3 Threads is fastest", fig.align="center", fig.pos="h", fig.asp=0.6>>=
+
+raw = read.csv('results-419-iput-threads.csv')
+d <- aggregate(raw[,7], raw[,1:5], FUN = median, na.rm=TRUE)
+colnames(d)[6] <- 'median_seconds'
+d419iput <- d
+d$parallel_buffer <- ordered(d$parallel_buffer, levels = c(4,50,100), labels = c('4MiB iRODS Buffer','50MiB iRODS Buffer','100MiB iRODS Buffer'))
+d$tcp_size <- ordered(d$tcp_size, levels = c('default','big'), labels = c('Default TCP Buffers','Tuned TCP Buffers'))
+d$N <- ordered(d$N, levels = c(1,2,3,4,8,16), labels = c('Streaming','2 Threads','3 Threads','4 Threads','8 Threads','16 Threads'))
+p1 <- xyplot( median_seconds ~ delay | parallel_buffer + tcp_size, d, groups = N, main = "iRODS 4.1.9 - iput - 10GiB file", type = "b", ylab = "Transfer Time (seconds)", xlab = "Network RTT (milliseconds)", auto.key = list(space="top", columns=2, pt.cex=1, cex=.8), ylim=c(5,55))
+
+# table data
+tp.0      <- subset(d, delay == "0")
+tp.0m     <- format(round(tp.0$median_seconds, digits=1), nsmall=1)
+tp.0b     <- format(round(tp.0$MiB / tp.0$median_seconds, digits=0), nsmall=0)
+tp.50     <- subset(d, delay == "50")
+tp.50m    <- format(round(tp.50$median_seconds, digits=1), nsmall=1)
+tp.50b    <- format(round(tp.50$MiB / tp.50$median_seconds, digits=0), nsmall=0)
+tp.100    <- subset(d, delay == "100")
+tp.100m   <- format(round(tp.100$median_seconds, digits=1), nsmall=1)
+tp.100b   <- format(round(tp.100$MiB / tp.100$median_seconds, digits=0), nsmall=0)
+
+raw = read.csv('results-419-iget-threads.csv')
+d <- aggregate(raw[,7], raw[,1:5], FUN = median, na.rm=TRUE)
+colnames(d)[6] <- 'median_seconds'
+d419iget <- d
+d$parallel_buffer <- ordered(d$parallel_buffer, levels = c(4,50,100), labels = c('4MiB iRODS Buffer','50MiB iRODS Buffer','100MiB iRODS Buffer'))
+d$tcp_size <- ordered(d$tcp_size, levels = c('default','big'), labels = c('Default TCP Buffers','Tuned TCP Buffers'))
+d$N <- ordered(d$N, levels = c(1,2,3,4,8,16), labels = c('Streaming','2 Threads','3 Threads','4 Threads','8 Threads','16 Threads'))
+p2 <- xyplot( median_seconds ~ delay | parallel_buffer + tcp_size, d, groups = N, main = "iRODS 4.1.9 - iget - 10GiB file", type = "b", ylab = "Transfer Time (seconds)", xlab = "Network RTT (milliseconds)", auto.key = list(space="top", columns=2, pt.cex=1, cex=.8), ylim=c(5,55))
+
+print(p1, split=c(1, 1, 2, 1), more=TRUE)
+print(p2, split=c(2, 1, 2, 1))
+
+# table data
+tg.0      <- subset(d, delay == "0")
+tg.0m     <- format(round(tg.0$median_seconds, digits=1), nsmall=1)
+tg.0b     <- format(round(tg.0$MiB / tg.0$median_seconds, digits=0), nsmall=0)
+tg.50     <- subset(d, delay == "50")
+tg.50m    <- format(round(tg.50$median_seconds, digits=1), nsmall=1)
+tg.50b    <- format(round(tg.50$MiB / tg.50$median_seconds, digits=0), nsmall=0)
+tg.100    <- subset(d, delay == "100")
+tg.100m   <- format(round(tg.100$median_seconds, digits=1), nsmall=1)
+tg.100b   <- format(round(tg.100$MiB / tg.100$median_seconds, digits=0), nsmall=0)
+@
+
+The partial listing of timings in Table \ref{419-transfer-times} are conservative since they include
+some small overhead introduced by the python test harness.  However, they are applied consistently, so relative assessments remain valid.
+
+
+%\begin{table}[h]
+%\centering
+%\resizebox{\textwidth}{!}{%
+%\begin{tabular}{r|rr|rr|rr||rr|rr|rr}
+% & \multicolumn{6}{c||}{\textbf{iput}} & \multicolumn{6}{c}{\textbf{iget}} \\
+% & \multicolumn{2}{c|}{\textasciitilde0ms delay} & \multicolumn{2}{c|}{50ms delay} & \multicolumn{2}{c||}{100ms delay} & \multicolumn{2}{c|}{\textasciitilde0ms delay} & \multicolumn{2}{c|}{50ms delay} & \multicolumn{2}{c}{100ms delay} \\
+% & seconds & MiB/s & seconds & MiB/s & seconds & MiB/s & seconds & MiB/s & seconds & MiB/s & seconds & MiB/s \\
+%\hline
+% Streaming & \Sexpr{tp.0m[1]} & \Sexpr{tp.0b[1]} & \Sexpr{tp.50m[1]} & \Sexpr{tp.50b[1]} & \Sexpr{tp.100m[1]} & \Sexpr{tp.100b[1]} & \Sexpr{tg.0m[1]} & \Sexpr{tg.0b[1]} & \Sexpr{tg.50m[1]} & \Sexpr{tg.50b[1]} & \Sexpr{tg.100m[1]} & \Sexpr{tg.100b[1]} \\
+% 2 Threads & \Sexpr{tp.0m[2]} & \Sexpr{tp.0b[2]} & \Sexpr{tp.50m[2]} & \Sexpr{tp.50b[2]} & \Sexpr{tp.100m[2]} & \Sexpr{tp.100b[2]} & \Sexpr{tg.0m[2]} & \Sexpr{tg.0b[2]} & \Sexpr{tg.50m[2]} & \Sexpr{tg.50b[2]} & \Sexpr{tg.100m[2]} & \Sexpr{tg.100b[2]} \\
+% 3 Threads & \Sexpr{tp.0m[3]} & \Sexpr{tp.0b[3]} & \Sexpr{tp.50m[3]} & \Sexpr{tp.50b[3]} & \Sexpr{tp.100m[3]} & \Sexpr{tp.100b[3]} & \Sexpr{tg.0m[3]} & \Sexpr{tg.0b[3]} & \Sexpr{tg.50m[3]} & \Sexpr{tg.50b[3]} & \Sexpr{tg.100m[3]} & \Sexpr{tg.100b[3]} \\
+% 4 Threads & \Sexpr{tp.0m[4]} & \Sexpr{tp.0b[4]} & \Sexpr{tp.50m[4]} & \Sexpr{tp.50b[4]} & \Sexpr{tp.100m[4]} & \Sexpr{tp.100b[4]} & \Sexpr{tg.0m[4]} & \Sexpr{tg.0b[4]} & \Sexpr{tg.50m[4]} & \Sexpr{tg.50b[4]} & \Sexpr{tg.100m[4]} & \Sexpr{tg.100b[4]} \\
+% 8 Threads & \Sexpr{tp.0m[5]} & \Sexpr{tp.0b[5]} & \Sexpr{tp.50m[5]} & \Sexpr{tp.50b[5]} & \Sexpr{tp.100m[5]} & \Sexpr{tp.100b[5]} & \Sexpr{tg.0m[5]} & \Sexpr{tg.0b[5]} & \Sexpr{tg.50m[5]} & \Sexpr{tg.50b[5]} & \Sexpr{tg.100m[5]} & \Sexpr{tg.100b[5]} \\
+%16 Threads & \Sexpr{tp.0m[6]} & \Sexpr{tp.0b[6]} & \Sexpr{tp.50m[6]} & \Sexpr{tp.50b[6]} & \Sexpr{tp.100m[6]} & \Sexpr{tp.100b[6]} & \Sexpr{tg.0m[6]} & \Sexpr{tg.0b[6]} & \Sexpr{tg.50m[6]} & \Sexpr{tg.50b[6]} & \Sexpr{tg.100m[6]} & \Sexpr{tg.100b[6]} \\
+%\end{tabular}
+%}
+%\caption{ORIGINAL}
+%\label{419-transfer-times-orig}
+%\end{table}
+
+
+
+\begin{table}[h]
+\centering
+\resizebox{.45\textwidth}{!}{%
+\begin{tabular}{r|rr|rr|rr}
+ \multicolumn{7}{c}{\textbf{iput}} \\
+ & \multicolumn{2}{c|}{\textasciitilde0ms delay} & \multicolumn{2}{c|}{50ms delay} & \multicolumn{2}{c}{100ms delay} \\
+ & seconds & MiB/s & seconds & MiB/s & seconds & MiB/s \\
+\hline
+ Streaming & \Sexpr{tp.0m[1]} & \Sexpr{tp.0b[1]} & \Sexpr{tp.50m[1]} & \Sexpr{tp.50b[1]} & \Sexpr{tp.100m[1]} & \Sexpr{tp.100b[1]} \\
+ 2 Threads & \Sexpr{tp.0m[2]} & \Sexpr{tp.0b[2]} & \Sexpr{tp.50m[2]} & \Sexpr{tp.50b[2]} & \Sexpr{tp.100m[2]} & \Sexpr{tp.100b[2]} \\
+ 3 Threads & \Sexpr{tp.0m[3]} & \Sexpr{tp.0b[3]} & \Sexpr{tp.50m[3]} & \Sexpr{tp.50b[3]} & \Sexpr{tp.100m[3]} & \Sexpr{tp.100b[3]} \\
+ 4 Threads & \Sexpr{tp.0m[4]} & \Sexpr{tp.0b[4]} & \Sexpr{tp.50m[4]} & \Sexpr{tp.50b[4]} & \Sexpr{tp.100m[4]} & \Sexpr{tp.100b[4]} \\
+ 8 Threads & \Sexpr{tp.0m[5]} & \Sexpr{tp.0b[5]} & \Sexpr{tp.50m[5]} & \Sexpr{tp.50b[5]} & \Sexpr{tp.100m[5]} & \Sexpr{tp.100b[5]} \\
+16 Threads & \Sexpr{tp.0m[6]} & \Sexpr{tp.0b[6]} & \Sexpr{tp.50m[6]} & \Sexpr{tp.50b[6]} & \Sexpr{tp.100m[6]} & \Sexpr{tp.100b[6]} \\
+\hline \\[2mm]
+ \multicolumn{7}{c}{\textbf{iget}} \\
+ & \multicolumn{2}{c|}{\textasciitilde0ms delay} & \multicolumn{2}{c|}{50ms delay} & \multicolumn{2}{c}{100ms delay} \\
+ & seconds & MiB/s & seconds & MiB/s & seconds & MiB/s \\
+\hline
+ Streaming & \Sexpr{tg.0m[1]} & \Sexpr{tg.0b[1]} & \Sexpr{tg.50m[1]} & \Sexpr{tg.50b[1]} & \Sexpr{tg.100m[1]} & \Sexpr{tg.100b[1]} \\
+ 2 Threads & \Sexpr{tg.0m[2]} & \Sexpr{tg.0b[2]} & \Sexpr{tg.50m[2]} & \Sexpr{tg.50b[2]} & \Sexpr{tg.100m[2]} & \Sexpr{tg.100b[2]} \\
+ 3 Threads & \Sexpr{tg.0m[3]} & \Sexpr{tg.0b[3]} & \Sexpr{tg.50m[3]} & \Sexpr{tg.50b[3]} & \Sexpr{tg.100m[3]} & \Sexpr{tg.100b[3]} \\
+ 4 Threads & \Sexpr{tg.0m[4]} & \Sexpr{tg.0b[4]} & \Sexpr{tg.50m[4]} & \Sexpr{tg.50b[4]} & \Sexpr{tg.100m[4]} & \Sexpr{tg.100b[4]} \\
+ 8 Threads & \Sexpr{tg.0m[5]} & \Sexpr{tg.0b[5]} & \Sexpr{tg.50m[5]} & \Sexpr{tg.50b[5]} & \Sexpr{tg.100m[5]} & \Sexpr{tg.100b[5]} \\
+16 Threads & \Sexpr{tg.0m[6]} & \Sexpr{tg.0b[6]} & \Sexpr{tg.50m[6]} & \Sexpr{tg.50b[6]} & \Sexpr{tg.100m[6]} & \Sexpr{tg.100b[6]} \\
+\end{tabular}
+}
+\caption{Median 4.1.9 Transfer Times and Maximum Sustained Throughput}
+\label{419-transfer-times}
+\end{table}
+
+
+\subsection{iRODS Buffer Size}
+
+Figure \ref{fig:419-iput-10gb-N3} investigates the best iRODS Buffer size while using 3 threads (\texttt{-N3}).
+
+The iRODS Buffer had little effect on the transfer time (even at 100ms RTT, the variance was under 2 seconds).  This agrees with the visual analysis of Figures \ref{fig:419-iput}-\ref{fig:419-iget} where the top rows were relatively flat and only showed improvement when the iRODS Buffer was increased for Streaming.
+
+Picking 100MiB for the iRODS Buffer size gives strong parallel transfer performance and allows Streaming to improve as much as possible.
+
+
+<<419-iput-10gb-N3, echo=FALSE, fig.lp="fig:", fig.cap="4.1.9 iput w/ Tuned TCP Buffers and 3 threads, n=10", fig.align="center", fig.pos="h", fig.asp=0.75>>=
+raw = read.csv("results-419-iput-N3.csv")
+
+d <- aggregate(raw[,7], raw[,1:5], FUN = median, na.rm=TRUE)
+colnames(d)[6] <- "median_seconds"
+#summary(d)
+
+d$parallel_buffer <- ordered(d$parallel_buffer, levels = c(4,10,25,50,75,100,200,400),
+labels = c('4MiB iRODS Buffer',
+'10MiB iRODS Buffer',
+'25MiB iRODS Buffer',
+'50MiB iRODS Buffer',
+'75MiB iRODS Buffer',
+'100MiB iRODS Buffer',
+'200MiB iRODS Buffer',
+'400MiB iRODS Buffer'))
+d$tcp_size <- ordered(d$tcp_size, levels = c('default','big'), labels = c('Default TCP Buffers','Tuned TCP Buffers'))
+d$N <- ordered(d$N, levels = c(1,2,3,4,8,16), labels = c('Streaming','2 Threads','3 Threads','4 Threads','8 Threads','16 Threads'))
+
+# create dataframe for 10G
+d.10G <- subset(d, MiB == "10240" & delay < 150)
+xyplot( median_seconds ~ delay | tcp_size, d.10G, groups = parallel_buffer, main = "iRODS 4.1.9 - iput - 10GiB file", type = "b", ylab = "Transfer Time (seconds)", xlab = "Network RTT (milliseconds)", auto.key = list(space="top", columns=2, pt.cex=1, cex=.8), ylim=c(-5,33))
+@
+
+
+\subsection{TCP Buffer Size}
+
+Figures \ref{fig:418-iput}-\ref{fig:419-iget} show that a larger TCP Buffer Size increases the throughput on high-latency, high-bandwidth connections.  There were no cases where a smaller maximum TCP Buffer Size outperformed the larger TCP Buffer Size.  With auto tuning in the kernel, the operating system will take advantage of the larger buffers when it can.
+
+
+
+\section{Comparison}
+
+iRODS 4.1.9 presents a significant improvement over 4.1.8.
+
+Both \texttt{iput} and \texttt{iget} improved and responded similarly under varying conditions.
+
+Tables \ref{tab:speedup-iput} and \ref{tab:speedup-iget} compare the best case scenarios tested, Tuned TCP Buffers and
+100MiB iRODS Buffer, between 4.1.8 and 4.1.9 (upper right panels of Figures
+\ref{fig:418-iput} and \ref{fig:419-iput} for \texttt{iput} and Figures \ref{fig:418-iget} and \ref{fig:419-iget}
+for \texttt{iget}) over a 10Gbps network connection with a 100ms RTT.
+
+The observed speedup is primarily due to iRODS 4.1.9 no longer setting the TCP send and receive window sizes, allowing TCP auto tuning
+to handle the window sizes dynamically.
+
+<< echo=FALSE>>=
+# 4.1.8 comparison data frame
+d418comp <- subset(d418iput, MiB == "10240" & tcp_size == "big" & delay == "100" & parallel_buffer == "100")
+d418comp$throughput <- d418comp$MiB / d418comp$median_seconds
+# 4.1.9 comparison data frame
+d419comp <- subset(d419iput, MiB == "10240" & tcp_size == "big" & delay == "100" & parallel_buffer == "100")
+d419comp$throughput <- d419comp$MiB / d419comp$median_seconds
+# comparison table columns
+t.a <- format(round(d418comp$median_seconds, digits=1), nsmall=1)
+t.b <- format(round(d418comp$throughput, digits=0), nsmall=0)
+t.c <- format(round(d419comp$median_seconds, digits=1), nsmall=1)
+t.d <- format(round(d419comp$throughput, digits=0), nsmall=0)
+speedup <- format(round(d419comp$throughput / d418comp$throughput, digits=0), nsmall=0)
+#summary(d419comp)
+@
+
+
+\begin{table}[h]
+\centering
+\begin{tabular}{r|rr|rr|r}
+ iput & \multicolumn{2}{c}{4.1.8} & \multicolumn{2}{c}{4.1.9} & \\
+ & seconds & MiB/s & seconds & MiB/s & Speedup\\
+\hline
+ Streaming  &  \Sexpr{t.a[1]}  &  \Sexpr{t.b[1]}  &  \Sexpr{t.c[1]}  &  \Sexpr{t.d[1]}  &  \Sexpr{speedup[1]}x \\
+ 2 Threads  &  \Sexpr{t.a[2]}  &  \Sexpr{t.b[2]}  &  \Sexpr{t.c[2]}  &  \Sexpr{t.d[2]}  &  \Sexpr{speedup[2]}x \\
+ 3 Threads  &  \Sexpr{t.a[3]}  &  \Sexpr{t.b[3]}  &  \Sexpr{t.c[3]}  &  \Sexpr{t.d[3]}  &  \Sexpr{speedup[3]}x \\
+ 4 Threads  &  \Sexpr{t.a[4]}  &  \Sexpr{t.b[4]}  &  \Sexpr{t.c[4]}  &  \Sexpr{t.d[4]}  &  \Sexpr{speedup[4]}x \\
+ 8 Threads  &  \Sexpr{t.a[5]}  &  \Sexpr{t.b[5]}  &  \Sexpr{t.c[5]}  &  \Sexpr{t.d[5]}  &  \Sexpr{speedup[5]}x \\
+16 Threads  &  \Sexpr{t.a[6]}  &  \Sexpr{t.b[6]}  &  \Sexpr{t.c[6]}  &  \Sexpr{t.d[6]}  &  \Sexpr{speedup[6]}x \\
+
+\end{tabular}
+\caption{10GiB iput w/ Tuned TCP Buffers, 100MiB iRODS Buffer, 100ms RTT}
+\label{tab:speedup-iput}
+\end{table}
+
+
+
+
+<< echo=FALSE>>=
+# 4.1.8 comparison data frame
+d418comp <- subset(d418iget, MiB == "10240" & tcp_size == "big" & delay == "100" & parallel_buffer == "100")
+d418comp$throughput <- d418comp$MiB / d418comp$median_seconds
+# 4.1.9 comparison data frame
+d419comp <- subset(d419iget, MiB == "10240" & tcp_size == "big" & delay == "100" & parallel_buffer == "100")
+d419comp$throughput <- d419comp$MiB / d419comp$median_seconds
+# comparison table columns
+t.a <- format(round(d418comp$median_seconds, digits=1), nsmall=1)
+t.b <- format(round(d418comp$throughput, digits=0), nsmall=0)
+t.c <- format(round(d419comp$median_seconds, digits=1), nsmall=1)
+t.d <- format(round(d419comp$throughput, digits=0), nsmall=0)
+speedup <- format(round(d419comp$throughput / d418comp$throughput, digits=0), nsmall=0)
+#summary(d419comp)
+@
+
+
+\begin{table}[h]
+\centering
+\begin{tabular}{r|rr|rr|r}
+ iget & \multicolumn{2}{c}{4.1.8} & \multicolumn{2}{c}{4.1.9} & \\
+ & seconds & MiB/s & seconds & MiB/s & Speedup\\
+\hline
+ Streaming  &  \Sexpr{t.a[1]}  &  \Sexpr{t.b[1]}  &  \Sexpr{t.c[1]}  &  \Sexpr{t.d[1]}  &  \Sexpr{speedup[1]}x \\
+ 2 Threads  &  \Sexpr{t.a[2]}  &  \Sexpr{t.b[2]}  &  \Sexpr{t.c[2]}  &  \Sexpr{t.d[2]}  &  \Sexpr{speedup[2]}x \\
+ 3 Threads  &  \Sexpr{t.a[3]}  &  \Sexpr{t.b[3]}  &  \Sexpr{t.c[3]}  &  \Sexpr{t.d[3]}  &  \Sexpr{speedup[3]}x \\
+ 4 Threads  &  \Sexpr{t.a[4]}  &  \Sexpr{t.b[4]}  &  \Sexpr{t.c[4]}  &  \Sexpr{t.d[4]}  &  \Sexpr{speedup[4]}x \\
+ 8 Threads  &  \Sexpr{t.a[5]}  &  \Sexpr{t.b[5]}  &  \Sexpr{t.c[5]}  &  \Sexpr{t.d[5]}  &  \Sexpr{speedup[5]}x \\
+16 Threads  &  \Sexpr{t.a[6]}  &  \Sexpr{t.b[6]}  &  \Sexpr{t.c[6]}  &  \Sexpr{t.d[6]}  &  \Sexpr{speedup[6]}x \\
+
+\end{tabular}
+\caption{10GiB iget w/ Tuned TCP Buffers, 100MiB iRODS Buffer, 100ms RTT}
+\label{tab:speedup-iget}
+\end{table}
+
+
+
+
+
+\section{Conclusion}
+
+iRODS is increasingly used in high bandwidth research and enterprise networking scenarios that include long distances and complex networking involving several hops across numerous intermediate routers.  These recent use cases have pushed the boundaries of the original optimizations within the iRODS networking code which were targeted at local area networks with relatively low latency and, therefore, a small bandwidth delay product (BDP).
+
+iRODS 4.1.9 explicitly addresses these new use cases and provides file transfers up to two orders of magnitude (100x) faster than iRODS 4.1.8.
+
+It is recommended for high-bandwidth, high-latency connections:
+
+\begin{itemize}
+\item to use 3 Threads for maximum throughput during parallel transfer.
+\item to increase the iRODS Buffer to 100MiB.
+\item to increase the maximum TCP Buffer Size.
+\end{itemize}
+
+
+\begin{thebibliography}{1}
+
+\bibitem{slowstart} M. Allman, V. Paxson, E. Blanton (2009) {\em RFC5681: TCP Congestion Control} \linebreak{}\url{https://tools.ietf.org/html/rfc5681}
+\bibitem{autotuning} L. Torvalds (2003) {\em Linux Kernel 2.6}
+
+\end{thebibliography}
+
+\end{document}
+

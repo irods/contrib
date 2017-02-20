@@ -1,4 +1,9 @@
-default:
-	R -e 'library("knitr"); knit("whitepaper.Rnw")'
-	pdflatex whitepaper.tex
-	pdflatex whitepaper.tex
+TARGETS = ieee whitepaper
+
+$(TARGETS):
+	R -e 'library("knitr"); knit("$@.Rnw")'
+	pdflatex $@.tex
+	pdflatex $@.tex
+
+clean:
+	rm -rf {ieee,whitepaper}.{aux,log,pdf,tex,toc} figure

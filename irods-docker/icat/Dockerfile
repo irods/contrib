@@ -46,8 +46,12 @@ RUN wget -qO - https://packages.irods.org/irods-signing-key.asc | apt-key add - 
     apt-get install -y irods-server irods-database-plugin-postgres && \
     apt-get clean
 
-#Create requisite folders
-RUN umask 002 && mkdir -p /export/Vault
+#Create requisite user,folders, chmod and chown
+RUN groupadd $GID && \
+    useradd -g $GID -d /home/$UID -m $UID && \
+    mkdir -p $VAULT_PATH && \
+    chown -R $UID:$GID $VAULT_PATH && \
+    chmod -R 775 $VAULT_PATH
 
 # Add scripts
 ADD ./scripts/genresp.sh /opt/irods/genresp.sh

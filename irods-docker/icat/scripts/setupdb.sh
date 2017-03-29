@@ -6,6 +6,7 @@
 
 if [ $LOCALDB == "true" ] ; then
     DEBIAN_FRONTEND=noninteractive;
+    sudo apt-get update;
     sudo apt-get install -y postgresql;
     sudo service postgresql restart
     sudo -u postgres createdb -O postgres 'ICAT' && \

@@ -27,7 +27,7 @@ THE_PASSWORD="xxxxxxxxxxx"
 THE_BASE_DN="OU=RENCI Users,DC=ad,DC=renci,DC=org"
 
 echo `date`
-for i in `ldapsearch -LLL -x -E pr=1000/noprompt -H ${THE_HOST_URI} -D ${THE_BIND_DN} -w ${THE_PASSWORD} -b ${THE_BASE_DN} uid 2> /dev/null | grep uid | awk '{print $2}'`; do
+for i in `ldapsearch -LLL -x -E pr=1000/noprompt -H ${THE_HOST_URI} -D ${THE_BIND_DN} -w ${THE_PASSWORD} -b ${THE_BASE_DN} sAMAccountName 2> /dev/null | grep sAMAccountName | awk '{print $2}'`; do
   error=`iadmin lu ${i}`
   if [ "$error" = "No rows found" ] ; then
     echo "Creating local iRODS rodsuser [${i}]"

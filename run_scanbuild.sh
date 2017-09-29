@@ -45,7 +45,7 @@ mkdir -p ${TARGETDIR}
 # environment
 CLANG_VERSION=$( grep "IRODS_MACRO_CHECK_DEPENDENCY_SET_FULLPATH(CLANG" ${SOURCEDIR}/CMakeLists.txt | awk '{print $2}' | sed s'/)$//' )
 export PATH=/opt/irods-externals/${CLANG_VERSION}/bin:${PATH}
-export PATH=/opt/irods-externals/cmake3.5.0-0/bin:${PATH}
+export PATH=/opt/irods-externals/cmake3.5.2-0/bin:${PATH}
 export CC=clang
 export CXX=clang++
 export CCC_CC=${CC}

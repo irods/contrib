@@ -152,7 +152,7 @@ irods::error put_all_the_files(
                         msg << "failed on [";
                         msg << dir_itr->path().string();
                         msg << "]";
-                        final_error = PASSMSG( msg.str(), final_error );
+                        final_error = PASSMSG( msg.str(), ret );
                     }
 
                 } // for dir_itr

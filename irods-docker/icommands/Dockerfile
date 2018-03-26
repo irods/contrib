@@ -1,10 +1,24 @@
 FROM ubuntu:14.04
 MAINTAINER danb@renci.org
 
-RUN apt-get update ; apt-get upgrade -y ; apt-get install -y wget libcurl4-gnutls-dev
+RUN locale-gen en_US.UTF-8
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US.UTF-8
+ENV LC_ALL en_US.UTF-8
 
-RUN wget ftp://ftp.renci.org/pub/irods/releases/4.1.3/ubuntu14/irods-icommands-4.1.3-ubuntu14-x86_64.deb -O /tmp/icommands.deb
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y `dpkg -I /tmp/icommands.deb | sed -n 's/^ Depends: //p' | sed 's/,//g'`
-RUN dpkg -i /tmp/icommands.deb
+#Update and upgrade packages, install dependencies
+RUN DEBIAN_FRONTEND=noninteractive \
+    apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y wget lsb-release apt-transport-https && \
+    apt-get clean
+
+#Add package repository and install
+RUN wget -qO - https://packages.irods.org/irods-signing-key.asc | apt-key add - && \
+    echo "deb [arch=amd64] https://packages.irods.org/apt/ $(lsb_release -sc) main" | tee /etc/apt/sources.list.d/renci-irods.list && \
+    apt-get update && \
+    apt-get install -y irods-icommands && \
+    apt-get clean
+
 
 ENTRYPOINT [ "/bin/bash" ]

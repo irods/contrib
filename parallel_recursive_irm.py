@@ -122,5 +122,11 @@ with iRODSSession(irods_env_file=env_file, **ssl_settings) as session:
         sys.exit(1)
 
 end_time = datetime.datetime.now()
-elapsed_time = end_time - start_time
-print('elapsed time: '+datetime.datetime.utcfromtimestamp((elapsed_time).total_seconds()).strftime("%H:%M:%S"))
+elapsed_seconds = datetime.datetime.utcfromtimestamp((end_time - start_time).total_seconds())
+
+final_output = {}
+final_output['logical_path'] = lp
+final_output['levels'] = len(tree.keys())
+final_output['elapsed_time'] = elapsed_seconds.strftime("%H:%M:%S")
+final_output['operation'] = args.operation
+print(final_output)

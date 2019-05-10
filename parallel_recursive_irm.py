@@ -4,6 +4,7 @@ import argparse
 import datetime
 import os
 import pprint
+import re
 import subprocess
 import sys
 
@@ -55,9 +56,12 @@ def produce_commands_for_tree(tree, operation):
                 f.write(cmd.format(escaped_path))
     return cmd_dir
 
+def filename_to_int(f):
+    return int(re.sub('[^0-9]','', f))
+
 def run_commands(cmd_dir):
     # run files
-    for i in sorted(os.listdir(cmd_dir), reverse=True):
+    for i in sorted(os.listdir(cmd_dir), key=filename_to_int, reverse=True):
         cmd_file = os.path.join(cmd_dir, i)
         log(['running...', cmd_file])
         try:

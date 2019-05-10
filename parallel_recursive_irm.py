@@ -118,7 +118,10 @@ with iRODSSession(irods_env_file=env_file, **ssl_settings) as session:
         # run commands
         run_commands(cmd_dir)
     except CollectionDoesNotExist:
-        print('logical path ['+lp+'] does not exist')
+        if not lp.startswith('/'):
+            print('logical path ['+lp+'] must be absolute')
+        else:
+            print('logical path ['+lp+'] does not exist')
         sys.exit(1)
 
 end_time = datetime.datetime.now()

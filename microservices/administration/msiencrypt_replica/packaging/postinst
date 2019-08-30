@@ -1,0 +1,9 @@
+if [ -f /etc/irods/service_account.config ] ; then
+  . /etc/irods/service_account.config
+else
+  IRODS_SERVICE_ACCOUNT_NAME=`stat --format "%U" /var/lib/irods`
+  IRODS_SERVICE_GROUP_NAME=`stat --format "%G" /var/lib/irods`
+fi
+
+
+chown $IRODS_SERVICE_ACCOUNT_NAME:$IRODS_SERVICE_GROUP_NAME /var/lib/irods/msiExecCmd_bin/move_file.sh

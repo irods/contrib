@@ -1,7 +1,7 @@
 
-#include "apiHeaderAll.hpp"
-#include "msParam.hpp"
-#include "reGlobalsExtern.hpp"
+#include "apiHeaderAll.h"
+#include "msParam.h"
+//#include "reGlobalsExtern.hpp"
 #include "irods_ms_plugin.hpp"
 
 #include <string>
@@ -190,9 +190,24 @@ extern "C" {
 
     irods::ms_table_entry* plugin_factory() {
         irods::ms_table_entry* msvc = new irods::ms_table_entry(5);
-        msvc->add_operation("msiencrypt_replica", "msiencrypt_replica");
+        msvc->add_operation<
+            msParam_t*,
+            msParam_t*,
+            msParam_t*,
+            msParam_t*,
+            msParam_t*,
+            ruleExecInfo_t*>
+            ("msiencrypt_replica",
+             std::function<int(
+                 msParam_t*,
+                 msParam_t*,
+                 msParam_t*,
+                 msParam_t*,
+                 msParam_t*,
+                 ruleExecInfo_t*)>(
+                 msiencrypt_replica));
         return msvc;
-    }
+    } // plugin_factory
 
 } // extern "C"
 

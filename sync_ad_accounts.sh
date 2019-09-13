@@ -26,9 +26,9 @@ THE_BIND_DN="ad\something"
 THE_PASSWORD="xxxxxxxxxxx"
 THE_BASE_DN="OU=Example Organization,DC=ad,DC=example,DC=org"
 
-echo `date`
-for i in `ldapsearch -LLL -x -E pr=1000/noprompt -H ${THE_HOST_URI} -D ${THE_BIND_DN} -w ${THE_PASSWORD} -b ${THE_BASE_DN} sAMAccountName 2> /dev/null | grep sAMAccountName | awk '{print $2}'`; do
-  error=`iadmin lu ${i}`
+echo $(date)
+for i in $(ldapsearch -LLL -x -E pr=1000/noprompt -H ${THE_HOST_URI} -D ${THE_BIND_DN} -w ${THE_PASSWORD} -b ${THE_BASE_DN} sAMAccountName 2> /dev/null | grep sAMAccountName | awk '{print $2}'); do
+  error=$(iadmin lu ${i})
   if [ "$error" = "No rows found" ] ; then
     echo "Creating local iRODS rodsuser [${i}]"
     iadmin mkuser ${i} rodsuser

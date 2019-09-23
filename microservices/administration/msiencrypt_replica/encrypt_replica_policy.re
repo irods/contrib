@@ -24,12 +24,6 @@ get_encrypt_replica_attribute(*attr) {
 }
 
 
-# Single point of truth for encrypt attribute
-get_encrypt_replica_attribute(*attr) {
-    *attr = "irods::encryption::encrypt"
-}
-
-
 # get the physical path from the catalog given logical path an resource hierarchy
 get_physical_path(*logical_path, *resource_hierarchy, *physical_path) {
     get_error_value(*physical_path)
@@ -91,6 +85,23 @@ encrypt_or_decrypt_object_replica(*logical_path, *resource_hierarchy, *encryptio
                          *encryption_flag )) # encrypt or decrypt
     if(*ec < 0) {
         *msg = "Failed in msiencrypt_replica for [*logical_path] at [resource_hierarchy]"
+        writeLine("serverLog",  *msg)
+        failmsg(*ec, *msg)
+    }
+
+    get_encrypt_replica_attribute(*attr)
+    *kvp_str = *attr ++ "=" ++ *resource_hierarchy
+
+    *ec = errorcode(msiString2KeyValPair(*kvp_str, *kvp))
+    if(*ec < 0) {
+        *msg = "Failed in msiString2KeyValPair for [*logical_path] with [*kvp_str]"
+        writeLine("serverLog",  *msg)
+        failmsg(*ec, *msg)
+    }
+
+    *ec = errorcode(msiAssociateKeyValuePairsToObj(*kvp, *logical_path, "-d"))
+    if(*ec < 0 && *ec != -809000) {
+        *msg = "Failed in msiAssociateKeyValuePairsToObj for [*logical_path] with [*kvp_str]"
         writeLine("serverLog",  *msg)
         failmsg(*ec, *msg)
     }

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5.0 FATAL_ERROR) #CPACK_DEBIAN_<COMPONENT>_PACKAGE_NAME
 
-find_package(IRODS 4.2.0 EXACT REQUIRED CONFIG)
+find_package(IRODS 4.2.8 EXACT REQUIRED)
 
 set(CMAKE_C_COMPILER ${IRODS_EXTERNALS_FULLPATH_CLANG}/bin/clang)
 set(CMAKE_CXX_COMPILER ${IRODS_EXTERNALS_FULLPATH_CLANG}/bin/clang++)
@@ -30,52 +30,53 @@ set(CMAKE_INSTALL_RPATH ${IRODS_EXTERNALS_FULLPATH_CLANG_RUNTIME}/lib)
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++")
 set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -stdlib=libc++")
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -stdlib=libc++")
-add_compile_options(-nostdinc++ -Wall -Wextra -Werror -Wno-unused-parameter)
+add_compile_options(-nostdinc++ -Wall -Wextra -Werror -Wno-unused-function -Wno-unused-parameter)
 link_libraries(c++abi)
-include_directories(${IRODS_EXTERNALS_FULLPATH_CLANG}/include/c++/v1)
+include_directories(${IRODS_EXTERNALS_FULLPATH_CLANG}/include/c++/v1
+                    ${IRODS_EXTERNALS_FULLPATH_JSON}/include)
 
 set(
-  IRODS_CLIENT_ICOMMANDS_EXECUTABLES
+  IPING_EXECUTABLE
   iping
   )
 
-foreach(EXECUTABLE ${IRODS_CLIENT_ICOMMANDS_EXECUTABLES})
-  add_executable(
-    ${EXECUTABLE}
-    ${CMAKE_SOURCE_DIR}/src/${EXECUTABLE}.cpp
-    )
-  target_link_libraries(
-    ${EXECUTABLE}
-    PRIVATE
-    irods_client
-    irods_plugin_dependencies
-    irods_common
-    ${IRODS_EXTERNALS_FULLPATH_AVRO}/lib/libavrocpp.so
-    ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_filesystem.so
-    ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_program_options.so
-    ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_system.so
-    ${IRODS_EXTERNALS_FULLPATH_JANSSON}/lib/libjansson.so
-    ${IRODS_EXTERNALS_FULLPATH_ZMQ}/lib/libzmq.so
-    )
-  target_include_directories(
-    ${EXECUTABLE}
-    PRIVATE
-    ${IRODS_INCLUDE_DIRS}
-    ${IRODS_EXTERNALS_FULLPATH_AVRO}/include
-    ${IRODS_EXTERNALS_FULLPATH_BOOST}/include
-    ${IRODS_EXTERNALS_FULLPATH_JANSSON}/include
-    ${IRODS_EXTERNALS_FULLPATH_ARCHIVE}/include
-    ${IRODS_EXTERNALS_FULLPATH_CPPZMQ}/include
-    ${IRODS_EXTERNALS_FULLPATH_ZMQ}/include
-    )
-  target_compile_definitions(${EXECUTABLE} PRIVATE RODS_SERVER ${IRODS_COMPILE_DEFINITIONS} BOOST_SYSTEM_NO_DEPRECATED)
-  target_compile_options(${EXECUTABLE} PRIVATE -Wno-write-strings)
-  set_property(TARGET ${EXECUTABLE} PROPERTY CXX_STANDARD ${IRODS_CXX_STANDARD})
-endforeach()
+add_executable(
+  ${IPING_EXECUTABLE}
+  ${CMAKE_SOURCE_DIR}/src/${IPING_EXECUTABLE}.cpp
+  )
+
+target_link_libraries(
+  ${IPING_EXECUTABLE}
+  PRIVATE
+  irods_client
+  irods_plugin_dependencies
+  irods_common
+  ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_chrono.so
+  ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_filesystem.so
+  ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_regex.so
+  ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_program_options.so
+  ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_system.so
+  ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_thread.so
+  ${IRODS_EXTERNALS_FULLPATH_FMT}/lib/libfmt.so
+  ${IRODS_EXTERNALS_FULLPATH_ZMQ}/lib/libzmq.so
+  )
+
+target_include_directories(
+  ${IPING_EXECUTABLE}
+  PRIVATE
+  ${IRODS_INCLUDE_DIRS}
+  ${IRODS_EXTERNALS_FULLPATH_BOOST}/include
+  ${IRODS_EXTERNALS_FULLPATH_JSON}/include
+  ${IRODS_EXTERNALS_FULLPATH_ZMQ}/include
+  )
+
+target_compile_definitions(${IPING_EXECUTABLE} PRIVATE RODS_SERVER ${IRODS_COMPILE_DEFINITIONS} BOOST_SYSTEM_NO_DEPRECATED)
+target_compile_options(${IPING_EXECUTABLE} PRIVATE -Wno-write-strings)
+set_property(TARGET ${IPING_EXECUTABLE} PROPERTY CXX_STANDARD ${IRODS_CXX_STANDARD})
 
 install(
   TARGETS
-  ${IRODS_CLIENT_ICOMMANDS_EXECUTABLES}
+  ${IPING_EXECUTABLE}
   RUNTIME
   DESTINATION usr/bin
   )

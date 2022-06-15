@@ -1,0 +1,362 @@
+#!/bin/bash
+#
+# /etc/init.d/kibana -- startup script for Kibana
+#
+### BEGIN INIT INFO
+# Provides:          kibana
+# Required-Start:    $network $remote_fs $named elasticsearch
+# Required-Stop:     $network $remote_fs $named
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Starts kibana
+# Description:       Starts kibana using start-stop-daemon
+### END INIT INFO
+
+PATH=/bin:/usr/bin:/sbin:/usr/sbin
+NAME=kibana
+DESC="Kibana Server"
+DEFAULT=/etc/default/$NAME
+# Ignoring /etc/sysconfig/$name
+
+if [ `id -u` -ne 0 ]; then
+	echo "You need root privileges to run this script"
+	exit 1
+fi
+
+
+. /lib/lsb/init-functions
+
+if [ -r /etc/default/rcS ]; then
+	. /etc/default/rcS
+fi
+
+
+# The following variables can be overwritten in $DEFAULT
+
+# How many seconds to wait for Kibana to start
+KBN_STARTUP_TIMEOUT=75
+
+# Run Kibana as this user ID and group ID
+KBN_USER=kibana
+KBN_GROUP=kibana
+
+# Directory where the Kibana distribution resides
+KBN_HOME=/usr/share/$NAME
+
+# Kibana configuration directory
+KBN_PATH_CONF=/etc/$NAME
+
+NODE_OPTIONS="--max-old-space-size=4096"
+
+# End of variables that can be overwritten in $DEFAULT
+
+# Overwrite settings from default file
+if [ -f "$DEFAULT" ]; then
+	. "$DEFAULT"
+fi
+
+# Variables defined from configuration
+# I don't think either yq implementation actually does this right so we have to get nasty
+
+# Kibana log file
+KBN_LOG_FILE="$(yq e '.logging.appenders.file.fileName' "$KBN_PATH_CONF/kibana.yml")"
+if [ "$KBN_LOG_FILE" != "null" ]; then
+	KBN_LOG_DIR="$(dirname "$KBN_LOG_FILE")"
+fi
+
+# Kibana PID file
+KBN_PID_FILE="$(yq e '.pid.file' "$KBN_PATH_CONF/kibana.yml")"
+if [ "$KBN_PID_FILE" == "null" ]; then
+	KBN_PID_FILE="$(yq e '."pid.file"' "$KBN_PATH_CONF/kibana.yml")"
+fi
+if [ "$KBN_PID_FILE" == "null" ]; then
+	PID_DIR="/run/kibana"
+	PID_FILE="$PID_DIR/$NAME.pid"
+else
+	PID_FILE="$KBN_PID_FILE"
+	PID_DIR="$(dirname "$KBN_PID_FILE")"
+fi
+
+# Address/Host to which Kibana binds
+KBN_SERVER_HOST="$(yq e '.server.host' "$KBN_PATH_CONF/kibana.yml")"
+if [ "$KBN_SERVER_HOST" == "null" ]; then
+	KBN_SERVER_HOST="$(yq e '."server.host"' "$KBN_PATH_CONF/kibana.yml")"
+fi
+if [ "$KBN_SERVER_HOST" == "null" ]; then
+	KBN_SERVER_HOST="localhost"
+fi
+
+# Port on which Kibana listens
+KBN_SERVER_PORT="$(yq e '.server.port' "$KBN_PATH_CONF/kibana.yml")"
+if [ "$KBN_SERVER_PORT" == "null" ]; then
+	KBN_SERVER_PORT="$(yq e '."server.port"' "$KBN_PATH_CONF/kibana.yml")"
+fi
+if [ "$KBN_SERVER_PORT" == "null" ]; then
+	KBN_SERVER_PORT=5601
+fi
+
+# Whether or not Kibana uses TLS
+KBN_SERVER_TLS="$(yq e '.server.ssl.enabled' "$KBN_PATH_CONF/kibana.yml")"
+if [ "$KBN_SERVER_TLS" == "null" ]; then
+	KBN_SERVER_TLS="$(yq e '."server.ssl.enabled"' "$KBN_PATH_CONF/kibana.yml")"
+fi
+if [ "$KBN_SERVER_TLS" == "null" ]; then
+	KBN_SERVER_TLS="$(yq e '.server."ssl.enabled"' "$KBN_PATH_CONF/kibana.yml")"
+fi
+if [ "$KBN_SERVER_TLS" == "null" ]; then
+	KBN_SERVER_TLS="$(yq e '."server.ssl".enabled' "$KBN_PATH_CONF/kibana.yml")"
+fi
+if [ "$KBN_SERVER_TLS" == "null" ]; then
+	KBN_SERVER_TLS="false"
+fi
+
+# Define other required variables
+DAEMON=$KBN_HOME/bin/kibana
+DAEMON_OPTS=""
+
+export KBN_PATH_CONF
+export NODE_OPTIONS
+
+if [ ! -x "$DAEMON" ]; then
+	echo "The kibana startup script does not exists or it is not executable, tried: $DAEMON"
+	exit 1
+fi
+
+if [ "$KBN_SERVER_TLS" == "true" ]; then
+	KBN_SERVER_PROTO="https"
+else
+	KBN_SERVER_PROTO="http"
+fi
+
+# returns 0 for (probably) happy kibana
+# returns 150 for failure to connect
+# returns 151 for (probably) degraded (or still starting) kibana
+# returns 152 if health check times out
+# returns 153 for unhandled curl error
+# returns 154 for unhandled HTTP status code
+kbn_hc_max_reruns=16
+#kbn_hc_endpoint="api/features"
+kbn_hc_endpoint="api/alerting/_health"
+kbn_healthcheck() {
+	retry_code=""
+	rerun_qty=0
+
+	while [[ "$#" -gt "0" ]]; do
+		case $1 in
+			retry) shift; retry_code="$1" ;;
+			rerun) shift; rerun_qty="$1" ;;
+			*) ;;
+		esac
+		shift
+	done
+
+	if [[ "$rerun_qty" -gt "$kbn_hc_max_reruns" ]]; then
+		return 153
+	fi
+
+	unset curl_out curl_err curl_ret status_code
+	eval "$( curl -sLIk -w "%{http_code}" -o /dev/null "${KBN_SERVER_PROTO}://${KBN_SERVER_HOST}:${KBN_SERVER_PORT}/${kbn_hc_endpoint}" -H 'kbn-xsrf: true' \
+		2> >(curl_err=$(cat); typeset -p curl_err) \
+		 > >(curl_out=$(cat); typeset -p curl_out); \
+		     curl_ret=$?;     typeset -p curl_ret )"
+	status_code="$curl_out"
+
+	if [[ "$curl_ret" != "0" ]]; then
+		case $curl_ret in
+			 7) # Failed to connect to host (ex: connection refused)
+				kbn_hc_failure_reason="Cannot connect to Kibana"
+				return 150
+				;;
+			 8) # Werid response, try again
+				kbn_hc_failure_reason="${curl_err}"
+				if [ "$retry_code" != "$curl_ret" ]; then
+					kbn_healthcheck retry $curl_ret rerun $(($rerun_qty + 1))
+					return $?
+				fi
+				return 153
+				;;
+			18) # Incomplete response, try again
+				kbn_hc_failure_reason="${curl_err}"
+				if [ "$retry_code" != "$curl_ret" ]; then
+					kbn_healthcheck retry $curl_ret rerun $(($rerun_qty + 1))
+					return $?
+				fi
+				return 153
+				;;
+			52) # Completely empty response, try again
+				kbn_hc_failure_reason="${curl_err}"
+				if [ "$retry_code" != "$curl_ret" ]; then
+					kbn_healthcheck retry $curl_ret rerun $(($rerun_qty + 1))
+					return $?
+				fi
+				return 153
+				;;
+			55) # Failure while sending data, try again
+				kbn_hc_failure_reason="${curl_err}"
+				if [ "$retry_code" != "$curl_ret" ]; then
+					kbn_healthcheck retry $curl_ret rerun $(($rerun_qty + 1))
+					return $?
+				fi
+				return 153
+				;;
+			56) # Failure while receiving data (ex: connection reset), try again
+				kbn_hc_failure_reason="${curl_err}"
+				if [ "$retry_code" != "$curl_ret" ]; then
+					kbn_healthcheck retry $curl_ret rerun $(($rerun_qty + 1))
+					return $?
+				fi
+				return 153
+				;;
+			22) # HTTP status code indicates error
+				if [[ "$status_code" == "503" ]]; then
+					kbn_hc_failure_reason="Kibana is degraded or still starting up (HTTP status 503)"
+					return 151
+				fi
+				kbn_hc_failure_reason="Kibana responded with HTTP status ${status_code}"
+				return 154
+				;;
+			28) kbn_hc_failure_reason="Timeout"; return 152 ;;
+			 *) kbn_hc_failure_reason="${curl_err}"; return 153 ;;
+		esac
+	elif [[ "$status_code" != "200" ]]; then
+		kbn_hc_failure_reason="Kibana responded with HTTP status ${status_code}"
+		return 154
+	fi
+
+	return 0
+}
+
+case "$1" in
+	start)
+		log_daemon_msg "Starting $DESC"
+
+		pid=`pidofproc -p $PID_FILE kibana`
+		if [ -n "$pid" ]; then
+			log_begin_msg "Already running."
+			log_end_msg 0
+			exit 0
+		else
+			rm -f "$PID_FILE"
+		fi
+
+		# Ensure that the PID_DIR exists (it is cleaned at OS startup time)
+		if [ -n "$PID_DIR" ] && [ ! -e "$PID_DIR" ]; then
+			mkdir -p "$PID_DIR" && chown "$KBN_USER":"$KBN_GROUP" "$PID_DIR"
+		fi
+
+		# Ensure that the KBN_LOG_DIR exists (it is cleaned at OS startup time)
+		if [ -n "$KBN_LOG_DIR" ] && [ ! -e "$KBN_LOG_DIR" ]; then
+			mkdir -p "$KBN_LOG_DIR" && chown "$KBN_USER":"$KBN_GROUP" "$KBN_LOG_DIR"
+		fi
+
+		if [ "$KBN_PID_FILE" == "null" ]; then
+			MAKE_PIDFILE_ARG="--make-pidfile"
+		else
+			MAKE_PIDFILE_ARG=""
+		fi
+
+		# Start Daemon
+		start-stop-daemon --start \
+		                  --chdir "$KBN_HOME" \
+		                  --user "$KBN_USER" --group "$KBN_GROUP" -c "$KBN_USER":"$KBN_GROUP" \
+		                  --pidfile "$PID_FILE" $MAKE_PIDFILE_ARG \
+		                  --background \
+		                  --exec $DAEMON -- $DAEMON_OPTS
+		return=$?
+
+		if [ $return -eq 0 ]; then
+			# Wait for the process to be properly started before exiting
+			i=0
+			timeout=$KBN_STARTUP_TIMEOUT
+
+			# Wait for kibana to create its pidfile
+			if [ "$KBN_PID_FILE" != "null" ]; then
+				until [ -e "$PID_FILE" ]; do
+					sleep 1
+					i=$(($i + 1))
+					if [ $i -gt $timeout ]; then
+						log_failure_msg "Failed to start $DESC (timeout waiting for pidfile)"
+						log_end_msg 1
+						exit 1
+					fi
+				done
+			fi
+
+			# Wait for kibana to respond properly to requests
+			while true; do
+				kbn_healthcheck
+				hc_ret=$?
+				if [[ "$hc_ret" == "0" ]]; then
+					break
+				fi
+				i=$(($i + 1))
+				if [ $i -gt $timeout ]; then
+					log_failure_msg "$DESC appears to be running, but healthcheck failed: $kbn_hc_failure_reason"
+					log_end_msg $hc_ret
+					exit $hc_ret
+				fi
+				sleep 1
+			done
+		fi
+
+		log_end_msg $return
+		exit $return
+		;;
+
+	stop)
+		log_daemon_msg "Stopping $DESC"
+
+		if [ -f "$PID_FILE" ]; then
+			start-stop-daemon --stop \
+			                  --pidfile "$PID_FILE" \
+			                  --user "$KBN_USER" --group "$KBN_GROUP" \
+			                  --quiet \
+			                  --retry TERM/60/KILL/5 >/dev/null
+			if [ $? -eq 1 ]; then
+				log_progress_msg "$DESC is not running but pid file exists, cleaning up"
+			elif [ $? -eq 3 ]; then
+				PID="`cat $PID_FILE`"
+				log_failure_msg "Failed to stop $DESC (pid $PID)"
+				exit 1
+			fi
+			rm -f "$PID_FILE"
+		else
+			log_progress_msg "(not running)"
+		fi
+		log_end_msg 0
+		;;
+
+	status)
+		pidofproc -p $PID_FILE kibana
+		status=$?
+		if [ "$status" == "4" ]; then
+			log_failure_msg "could not access PID file for $NAME"
+			exit $status
+		elif [ "$status" != "0" ]; then
+			log_failure_msg "$NAME is not running"
+			exit $status
+		fi
+		kbn_healthcheck
+		hc_ret=$?
+		if [[ "$hc_ret" != "0" ]]; then
+			log_failure_msg "$NAME is running, but healthcheck failed: $kbn_hc_failure_reason"
+			exit $hc_ret
+		fi
+		log_success_msg "$NAME is running"
+		exit 0
+		;;
+
+	restart)
+		if [ -f "$PID_FILE" ]; then
+			$0 stop
+		fi
+		$0 start
+		;;
+
+	*)
+		log_success_msg "Usage: $0 {start|stop|restart|status}"
+		exit 1
+		;;
+esac
+
+exit 0

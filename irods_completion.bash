@@ -2,11 +2,14 @@
 # Script for irods i-commands auto-completion with bash
 # This script is GPL, blah blah blah...
 # Bruno Bzeznik <Bruno.Bzeznik@imag.fr> 10/2011
-#  
+#
 # Simply source this script as follows:
-#     . irods_completion.bash 
+#     . irods_completion.bash
 # and enjoy <tab> key
 # Feel free to improve!
+#
+# Updated 2022/09/16 Terrell Russell
+#  - fix setting and unsetting IRODS_CWD (for 4.2+)
 #
 
 # Irods command to auto-complete
@@ -19,8 +22,8 @@ _ils() {
   cur="${COMP_WORDS[COMP_CWORD]}"
   prev="${COMP_WORDS[COMP_CWORD-1]}"
 
-  # Set irods current directory (weird!!)
-  export irodsCwd=$(ipwd)
+  # Set irods current directory
+  export IRODS_CWD=$(ipwd)
 
   # Generate the list of irods files
   if [[ $cur == "" ]] ; then
@@ -59,10 +62,13 @@ _ils() {
       COMPREPLY+=( $(compgen -o default ${cur}) )
     fi
 
-  # General case 
+  # General case
   else
     COMPREPLY=( $(compgen -P "$dirname" -W "$list" ${basename}) )
   fi
+
+  # Unset irods current directory
+  unset IRODS_CWD
 }
 
 # Complete the specified commands

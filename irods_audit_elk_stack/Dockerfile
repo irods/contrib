@@ -147,13 +147,16 @@ COPY kibana/kibana.init /etc/init.d/kibana
 RUN chmod +x /etc/init.d/kibana
 
 # Initialize Elasticsearch and Kibana
+SHELL [ "/bin/bash", "-x", "-c" ]
+COPY elasticsearch/irods_audit.index.json /var/lib/irods-elk/irods_audit.index.json
 COPY kibana/irods_dashboard.ndjson /var/lib/irods-elk/irods_dashboard.ndjson
 RUN ES_JAVA_OPTS="-Xms512m -Xmx512m" /etc/init.d/elasticsearch start && \
-    curl -sLSf -XPUT "http://localhost:9200/irods_audit" && echo && \
-    curl -sLSf -XPUT "http://localhost:9200/irods_audit/_settings" \
+    curl -sLSf -XPUT "http://localhost:9200/irods_audit?pretty=true" \
         -H 'Content-Type: application/json' \
-        -d'{"index.mapping.total_fields.limit": 2000}' \
-    && echo && \
+        --data @/var/lib/irods-elk/irods_audit.index.json \
+    && \
+    curl -sLSf -X GET "http://localhost:9200/irods_audit/_settings?pretty=true&human=true" && \
+    curl -sLSf -X GET "http://localhost:9200/irods_audit/_mapping?pretty=true&human=true" && \
     /etc/init.d/kibana start && \
     curl -sLSf -X POST "http://localhost:5601/api/saved_objects/_import" \
         -H "kbn-xsrf: true" \
@@ -161,6 +164,7 @@ RUN ES_JAVA_OPTS="-Xms512m -Xmx512m" /etc/init.d/elasticsearch start && \
     && echo && \
     /etc/init.d/kibana stop && \
     /etc/init.d/elasticsearch stop
+SHELL [ "/bin/bash", "-c" ]
 
 # not-logstash script and init script
 COPY not-logstash/not-logstash.py /var/lib/irods-elk/bin/not-logstash

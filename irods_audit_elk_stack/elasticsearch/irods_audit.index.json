@@ -1,0 +1,16 @@
+{
+	"settings": {
+		"index": {
+			"shard.check_on_startup": "false",
+			"mapping.total_fields.limit": 2000
+		}
+	},
+	"mappings": {
+		"properties": {
+			"@timestamp": {
+				"type": "date",
+				"format": "epoch_millis"
+			}
+		}
+	}
+}

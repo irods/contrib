@@ -45,6 +45,9 @@ LS_HOME=/var/lib/irods-elk
 # not-logstash PID file directory
 PID_DIR="/var/run/$NAME"
 
+# Workarounds for bad json
+LS_WORKAROUNDS=""
+
 # End of variables that can be overwritten in $DEFAULT
 
 # Overwrite settings from default file
@@ -60,6 +63,11 @@ DAEMON_OPTS=""
 if [ ! -x "$DAEMON" ]; then
 	echo "The not-logstash script does not exist or it is not executable, tried: $DAEMON"
 	exit 1
+fi
+
+# Add workaround argument to DAEMON_OPTS
+if [[ -n "$LS_WORKAROUNDS" ]]; then
+	DAEMON_OPTS="--workarounds=$LS_WORKAROUNDS"
 fi
 
 case "$1" in

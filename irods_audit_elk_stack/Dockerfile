@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.2
 #
 # Build Audit Stack for iRODS Monitoring via Audit Plugin
 #
@@ -8,15 +9,22 @@ FROM ubuntu:20.04
 SHELL [ "/bin/bash", "-c" ]
 ENV DEBIAN_FRONTEND=noninteractive
 
+# Re-enable apt caching for RUN --mount
+RUN rm -f /etc/apt/apt.conf.d/docker-clean && \
+    echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache
+
 # Make sure we're starting with an up-to-date image
-RUN apt-get update && \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && \
     apt-get upgrade -y && \
     apt-get autoremove -y --purge && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* /tmp/*
+    rm -rf /tmp/*
 
 # Install some standard stuff
-RUN apt-get update && \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && \
     apt-get install -y \
         apt-transport-https \
         gnupg \
@@ -26,23 +34,25 @@ RUN apt-get update && \
         software-properties-common \
         gosu \
     && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* /tmp/*
+    rm -rf /tmp/*
 
 # Install yq, needed for init scripts
 RUN add-apt-repository --no-update -y ppa:rmescandon/yq
-RUN apt-get update && \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && \
     apt-get install --no-install-recommends -y \
         yq \
     && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* /tmp/*
+    rm -rf /tmp/*
 
 # Install JDK/JRE
 COPY java-excludes.dpkg.cfg /etc/dpkg/dpkg.cfg.d/java-excludes
 ADD https://packages.adoptium.net/artifactory/api/gpg/key/public /usr/share/keyrings/adoptium.asc
 ADD https://adoptopenjdk.jfrog.io/adoptopenjdk/api/gpg/key/public /usr/share/keyrings/adoptopenjdk.asc
-RUN gpg --dearmor -o /usr/share/keyrings/adoptium.gpg /usr/share/keyrings/adoptium.asc && \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    gpg --dearmor -o /usr/share/keyrings/adoptium.gpg /usr/share/keyrings/adoptium.asc && \
     gpg --dearmor -o /usr/share/keyrings/adoptopenjdk.gpg /usr/share/keyrings/adoptopenjdk.asc && \
     echo "deb [signed-by=/usr/share/keyrings/adoptium.gpg] https://packages.adoptium.net/artifactory/deb $(awk -F= '/^VERSION_CODENAME/{print$2}' /etc/os-release) main" | tee /etc/apt/sources.list.d/adoptium.list && \
     echo "deb [signed-by=/usr/share/keyrings/adoptopenjdk.gpg] https://adoptopenjdk.jfrog.io/adoptopenjdk/deb/ $(awk -F= '/^VERSION_CODENAME/{print$2}' /etc/os-release) main" | tee /etc/apt/sources.list.d/adoptopenjdk.list && \
@@ -50,17 +60,17 @@ RUN gpg --dearmor -o /usr/share/keyrings/adoptium.gpg /usr/share/keyrings/adopti
     apt-get install -y \
         adoptium-ca-certificates \
     && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* /tmp/*
+    rm -rf /tmp/*
 ARG java_ver=17
 ARG java_vendor=temurin
 ARG java_dist=jdk
-RUN apt-get update && \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && \
     apt-get install --no-install-recommends -y \
         ${java_vendor}-${java_ver}-${java_dist} \
     && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* /tmp/*
+    rm -rf /tmp/*
 ENV JAVA_HOME=/usr/lib/jvm/${java_vendor}-${java_ver}-${java_dist}-amd64
 RUN update-java-alternatives --set ${JAVA_HOME}
 ENV ES_JAVA_HOME=${JAVA_HOME}
@@ -72,13 +82,14 @@ COPY kibana/exclude-node-stuff.dpkg.cfg /etc/dpkg/dpkg.cfg.d/kibana-exclude-node
 ADD https://artifacts.elastic.co/GPG-KEY-elasticsearch /usr/share/keyrings/elasticsearch-keyring.asc
 RUN gpg --dearmor -o /usr/share/keyrings/elasticsearch-keyring.gpg /usr/share/keyrings/elasticsearch-keyring.asc && \
     echo "deb [signed-by=/usr/share/keyrings/elasticsearch-keyring.gpg] https://artifacts.elastic.co/packages/${es_ver}.x/apt stable main" | tee /etc/apt/sources.list.d/elastic-${es_ver}.x.list
-RUN apt-get update && \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && \
     apt-get install --no-install-recommends -y \
         elasticsearch \
         kibana \
     && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* /tmp/*
+    rm -rf /tmp/*
 RUN echo "ES_JAVA_HOME=\"${ES_JAVA_HOME}\"" >> /etc/default/elasticsearch
 
 # Install RabbitMQ
@@ -88,27 +99,29 @@ RUN add-apt-repository --no-update -y ppa:rabbitmq/rabbitmq-erlang && \
     gpg --dearmor -o /usr/share/keyrings/rabbitmq_rabbitmq-server.gpg /usr/share/keyrings/rabbitmq_rabbitmq-server.asc && \
     gpg --dearmor -o /usr/share/keyrings/erlang_solutions.gpg /usr/share/keyrings/erlang_solutions.asc && \
     echo "deb [signed-by=/usr/share/keyrings/rabbitmq_rabbitmq-server.gpg] https://packagecloud.io/rabbitmq/rabbitmq-server/ubuntu/ $(awk -F= '/^VERSION_CODENAME/{print$2}' /etc/os-release) main" | tee /etc/apt/sources.list.d/rabbitmq_rabbitmq-server.list && \
-    echo "deb [signed-by=/usr/share/keyrings/erlang_solutions.gpg] https://packages.erlang-solutions.com/ubuntu $(awk -F= '/^VERSION_CODENAME/{print$2}' /etc/os-release) contrib" | tee /etc/apt/sources.list.d/erlang-solutions.list && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* /tmp/*
-RUN apt-get update && \
+    echo "deb [signed-by=/usr/share/keyrings/erlang_solutions.gpg] https://packages.erlang-solutions.com/ubuntu $(awk -F= '/^VERSION_CODENAME/{print$2}' /etc/os-release) contrib" | tee /etc/apt/sources.list.d/erlang-solutions.list
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && \
     apt-get install -y \
         rabbitmq-server \
     && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* /tmp/*
+    rm -rf /tmp/*
 
 # Install Python modules for Logstash stand-in
-RUN apt-get update && \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && \
     apt-get install --no-install-recommends -y \
         python3-qpid-proton \
         python3-elasticsearch \
     && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* /tmp/*
+    rm -rf /tmp/*
 
 # Install some utils
-RUN apt-get update && \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && \
     apt-get install -y \
         procps \
         nano \
@@ -116,8 +129,7 @@ RUN apt-get update && \
         iproute2 \
         file \
     && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* /tmp/*
+    rm -rf /tmp/*
 
 # Install RabbitMQ plugins and create administrator account
 RUN rabbitmq-plugins enable \
@@ -133,8 +145,7 @@ RUN rabbitmq-plugins enable \
 # Elasticsearch init script and config files
 COPY --chown=root:elasticsearch elasticsearch/elasticsearch.yml /etc/elasticsearch/elasticsearch.yml
 COPY --chown=root:elasticsearch elasticsearch/jvm.options.d/oom_heap_dump.options /etc/elasticsearch/jvm.options.d/
-COPY elasticsearch/elasticsearch.init /etc/init.d/elasticsearch
-RUN chmod +x /etc/init.d/elasticsearch
+COPY --chmod=755 elasticsearch/elasticsearch.init /etc/init.d/elasticsearch
 # Since we have disabled security, we must purge our keystore of secure passwords
 RUN /usr/share/elasticsearch/bin/elasticsearch-keystore remove \
         xpack.security.http.ssl.keystore.secure_password \
@@ -143,8 +154,7 @@ RUN /usr/share/elasticsearch/bin/elasticsearch-keystore remove \
 
 # Kibana init script and config files
 COPY --chown=root:kibana kibana/kibana.yml /etc/kibana/kibana.yml
-COPY kibana/kibana.init /etc/init.d/kibana
-RUN chmod +x /etc/init.d/kibana
+COPY --chmod=755 kibana/kibana.init /etc/init.d/kibana
 
 # Initialize Elasticsearch and Kibana
 SHELL [ "/bin/bash", "-x", "-c" ]
@@ -167,13 +177,10 @@ RUN ES_JAVA_OPTS="-Xms512m -Xmx512m" /etc/init.d/elasticsearch start && \
 SHELL [ "/bin/bash", "-c" ]
 
 # not-logstash script and init script
-COPY not-logstash/not-logstash.py /var/lib/irods-elk/bin/not-logstash
-COPY not-logstash/not-logstash.init /etc/init.d/not-logstash
-RUN chmod +x /var/lib/irods-elk/bin/not-logstash \
-             /etc/init.d/not-logstash
+COPY --chmod=755 not-logstash/not-logstash.py /var/lib/irods-elk/bin/not-logstash
+COPY --chmod=755 not-logstash/not-logstash.init /etc/init.d/not-logstash
 
 WORKDIR /var/lib/irods-elk
 
-COPY startup-script.sh /var/lib/irods-elk/startup-script.sh
-RUN chmod +x /var/lib/irods-elk/startup-script.sh
+COPY --chmod=755 startup-script.sh /var/lib/irods-elk/startup-script.sh
 ENTRYPOINT ["/var/lib/irods-elk/startup-script.sh"]

@@ -4,8 +4,10 @@ import argparse
 import time
 import json
 import sys
+import logging
 from enum import Flag, auto, _decompose
 from threading import Lock
+from pprint import pformat
 
 from proton import Message
 from proton.handlers import MessagingHandler
@@ -76,6 +78,7 @@ class Workarounds(FlagArg, Flag):
 
 class ELKReader(MessagingHandler):
 	def __init__(self, server, address, workarounds=Workarounds.NONE):
+		self.logger = logging.getLogger('ELKReader')
 		super(ELKReader, self).__init__()
 		self.workaround_tokens = self._w_tokens if Workarounds.TOKENS in workarounds else self._w_noop
 		self.workaround_typing = self._w_typing if Workarounds.TYPING in workarounds else self._w_noop
@@ -121,11 +124,14 @@ class ELKReader(MessagingHandler):
 		self.workaround_ts(body_obj)
 		self.workaround_typing(body_obj)
 
-		self.es.index(
-			index = "irods_audit",
-			id = msg_id,
-			body = body_obj
-		)
+		try:
+			self.es.index(
+				index = "irods_audit",
+				id = msg_id,
+				body = body_obj
+			)
+		except Exception:
+			self.logger.exception('ES exception. body:\n%s', pformat(body_obj))
 
 def _main():
 	args = get_argparser().parse_args()

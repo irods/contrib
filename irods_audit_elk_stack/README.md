@@ -18,6 +18,12 @@ This Ubuntu Focal-based container contains Elasticsearch 8, Kibana 8, RabbitMQ (
 
 RabbitMQ receives AMQP 1.0 messages containing JSON data from the audit plugin. The Python daemon takes the messages from RabbitMQ, does a little type conversion in the JSON, and puts the information in Elasticsearch. Kibana is configured with a sample dashboard that displays extracted metrics from the data in Elasticsearch.
 
+### Building the Container
+
+The Dockerfile from which this container is built uses new syntax and must be built with BuildKit. Recent versions of Docker come with BuildKit bundled in.
+
+To build this container, use [`docker buildx`](https://docs.docker.com/engine/reference/commandline/buildx/). Alternatively, use `docker build` with the environment variable `DOCKER_BUILDKIT` set to `1`.
+
 ### Credentials
 
 RabbitMQ is configured with an administrator account with username `test` and password `test`.  
@@ -30,7 +36,24 @@ Once all services are running, the entrypoint script runs `ip addr`, which allow
 
 #### Arguments
 
-The entrypoint takes a single optional argument, `--es-java-heap-size`, to set the Elasticsearch Java heap size. By default, it is set to `512m`. It can be set to any value that Java would recognize, or `auto` to allow Elasticsearch/Java to decide on a heap size automatically.
+```
+  -m, --es-java-heap-size=<SIZE>
+                            Specify Elasticsearch Java heap size
+                            (default: '512m')
+                            '<value>[g|G|m|M|k|K]': Run Elasticsearch with the
+                                      given heap size
+                            'auto':   Let Elasticsearch/Java decide on a heap
+                                      size
+  -w, --ls-workarounds=<LIST>
+                            Comma-separated list of not-logstash workarounds
+                            to enable.
+                            (default: typing)
+                            'none':   No workarounds
+                            tokens:   Workaround for json-wrapper tokens
+                            typing:   Workaround for improperly typed json
+                            timestamp:  Workaround for timestamp formatting
+                                      and typing
+```
 
 ### Relevant Ports
 

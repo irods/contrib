@@ -133,6 +133,7 @@ RUN rabbitmq-plugins enable \
         rabbitmq_amqp1_0 \
         rabbitmq_management \
     && \
+    echo 'NODENAME=rabbitmq@localhost' > /etc/rabbitmq/rabbitmq-env.conf && \
     /etc/init.d/rabbitmq-server start && \
     rabbitmqctl add_user test test && \
     rabbitmqctl set_user_tags test administrator && \

@@ -49,13 +49,10 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 # Install JDK/JRE
 COPY java-excludes.dpkg.cfg /etc/dpkg/dpkg.cfg.d/java-excludes
 ADD https://packages.adoptium.net/artifactory/api/gpg/key/public /usr/share/keyrings/adoptium.asc
-ADD https://adoptopenjdk.jfrog.io/adoptopenjdk/api/gpg/key/public /usr/share/keyrings/adoptopenjdk.asc
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     gpg --dearmor -o /usr/share/keyrings/adoptium.gpg /usr/share/keyrings/adoptium.asc && \
-    gpg --dearmor -o /usr/share/keyrings/adoptopenjdk.gpg /usr/share/keyrings/adoptopenjdk.asc && \
     echo "deb [signed-by=/usr/share/keyrings/adoptium.gpg] https://packages.adoptium.net/artifactory/deb $(awk -F= '/^VERSION_CODENAME/{print$2}' /etc/os-release) main" | tee /etc/apt/sources.list.d/adoptium.list && \
-    echo "deb [signed-by=/usr/share/keyrings/adoptopenjdk.gpg] https://adoptopenjdk.jfrog.io/adoptopenjdk/deb/ $(awk -F= '/^VERSION_CODENAME/{print$2}' /etc/os-release) main" | tee /etc/apt/sources.list.d/adoptopenjdk.list && \
     apt-get update && \
     apt-get install -y \
         adoptium-ca-certificates \

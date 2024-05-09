@@ -47,28 +47,14 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 
 # Install JDK/JRE
 COPY java-excludes.dpkg.cfg /etc/dpkg/dpkg.cfg.d/java-excludes
-ADD https://packages.adoptium.net/artifactory/api/gpg/key/public /usr/share/keyrings/adoptium.asc
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    gpg --dearmor -o /usr/share/keyrings/adoptium.gpg /usr/share/keyrings/adoptium.asc && \
-    echo "deb [signed-by=/usr/share/keyrings/adoptium.gpg] https://packages.adoptium.net/artifactory/deb $(awk -F= '/^VERSION_CODENAME/{print$2}' /etc/os-release) main" | tee /etc/apt/sources.list.d/adoptium.list && \
-    apt-get update && \
-    apt-get install -y \
-        adoptium-ca-certificates \
-    && \
-    rm -rf /tmp/*
-ARG java_ver=17
-ARG java_vendor=temurin
-ARG java_dist=jdk
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && \
     apt-get install --no-install-recommends -y \
-        ${java_vendor}-${java_ver}-${java_dist} \
+        openjdk-17-jre-headless \
     && \
     rm -rf /tmp/*
-ENV JAVA_HOME=/usr/lib/jvm/${java_vendor}-${java_ver}-${java_dist}-amd64
-RUN update-java-alternatives --set ${JAVA_HOME}
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
 ENV ES_JAVA_HOME=${JAVA_HOME}
 
 # Install Elasticsearch and Kibana

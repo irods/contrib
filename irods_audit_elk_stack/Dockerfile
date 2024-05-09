@@ -171,7 +171,8 @@ RUN ES_JAVA_OPTS="-Xms512m -Xmx512m" /etc/init.d/elasticsearch start && \
         --form file=@/var/lib/irods-elk/irods_dashboard.ndjson \
     && echo && \
     /etc/init.d/kibana stop && \
-    /etc/init.d/elasticsearch stop
+    /etc/init.d/elasticsearch stop && \
+    find /var/lib/elasticsearch/ -type f -name '*.lock' -delete
 SHELL [ "/bin/bash", "-c" ]
 
 # not-logstash script and init script

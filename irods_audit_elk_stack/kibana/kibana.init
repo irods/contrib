@@ -59,15 +59,15 @@ fi
 # I don't think either yq implementation actually does this right so we have to get nasty
 
 # Kibana log file
-KBN_LOG_FILE="$(yq e '.logging.appenders.file.fileName' "$KBN_PATH_CONF/kibana.yml")"
+KBN_LOG_FILE="$(yq -Mr '.logging.appenders.file.fileName' "$KBN_PATH_CONF/kibana.yml")"
 if [ "$KBN_LOG_FILE" != "null" ]; then
 	KBN_LOG_DIR="$(dirname "$KBN_LOG_FILE")"
 fi
 
 # Kibana PID file
-KBN_PID_FILE="$(yq e '.pid.file' "$KBN_PATH_CONF/kibana.yml")"
+KBN_PID_FILE="$(yq -Mr '.pid.file' "$KBN_PATH_CONF/kibana.yml")"
 if [ "$KBN_PID_FILE" == "null" ]; then
-	KBN_PID_FILE="$(yq e '."pid.file"' "$KBN_PATH_CONF/kibana.yml")"
+	KBN_PID_FILE="$(yq -Mr '."pid.file"' "$KBN_PATH_CONF/kibana.yml")"
 fi
 if [ "$KBN_PID_FILE" == "null" ]; then
 	PID_DIR="/run/kibana"
@@ -78,33 +78,33 @@ else
 fi
 
 # Address/Host to which Kibana binds
-KBN_SERVER_HOST="$(yq e '.server.host' "$KBN_PATH_CONF/kibana.yml")"
+KBN_SERVER_HOST="$(yq -Mr '.server.host' "$KBN_PATH_CONF/kibana.yml")"
 if [ "$KBN_SERVER_HOST" == "null" ]; then
-	KBN_SERVER_HOST="$(yq e '."server.host"' "$KBN_PATH_CONF/kibana.yml")"
+	KBN_SERVER_HOST="$(yq -Mr '."server.host"' "$KBN_PATH_CONF/kibana.yml")"
 fi
 if [ "$KBN_SERVER_HOST" == "null" ]; then
 	KBN_SERVER_HOST="localhost"
 fi
 
 # Port on which Kibana listens
-KBN_SERVER_PORT="$(yq e '.server.port' "$KBN_PATH_CONF/kibana.yml")"
+KBN_SERVER_PORT="$(yq -Mr '.server.port' "$KBN_PATH_CONF/kibana.yml")"
 if [ "$KBN_SERVER_PORT" == "null" ]; then
-	KBN_SERVER_PORT="$(yq e '."server.port"' "$KBN_PATH_CONF/kibana.yml")"
+	KBN_SERVER_PORT="$(yq -Mr '."server.port"' "$KBN_PATH_CONF/kibana.yml")"
 fi
 if [ "$KBN_SERVER_PORT" == "null" ]; then
 	KBN_SERVER_PORT=5601
 fi
 
 # Whether or not Kibana uses TLS
-KBN_SERVER_TLS="$(yq e '.server.ssl.enabled' "$KBN_PATH_CONF/kibana.yml")"
+KBN_SERVER_TLS="$(yq -Mr '.server.ssl.enabled' "$KBN_PATH_CONF/kibana.yml")"
 if [ "$KBN_SERVER_TLS" == "null" ]; then
-	KBN_SERVER_TLS="$(yq e '."server.ssl.enabled"' "$KBN_PATH_CONF/kibana.yml")"
+	KBN_SERVER_TLS="$(yq -Mr '."server.ssl.enabled"' "$KBN_PATH_CONF/kibana.yml")"
 fi
 if [ "$KBN_SERVER_TLS" == "null" ]; then
-	KBN_SERVER_TLS="$(yq e '.server."ssl.enabled"' "$KBN_PATH_CONF/kibana.yml")"
+	KBN_SERVER_TLS="$(yq -Mr '.server."ssl.enabled"' "$KBN_PATH_CONF/kibana.yml")"
 fi
 if [ "$KBN_SERVER_TLS" == "null" ]; then
-	KBN_SERVER_TLS="$(yq e '."server.ssl".enabled' "$KBN_PATH_CONF/kibana.yml")"
+	KBN_SERVER_TLS="$(yq -Mr '."server.ssl".enabled' "$KBN_PATH_CONF/kibana.yml")"
 fi
 if [ "$KBN_SERVER_TLS" == "null" ]; then
 	KBN_SERVER_TLS="false"

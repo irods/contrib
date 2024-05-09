@@ -5,7 +5,7 @@ import time
 import json
 import sys
 import logging
-from enum import Flag, auto, _decompose
+from enum import Flag, auto
 from threading import Lock
 from pprint import pformat
 
@@ -42,9 +42,12 @@ def get_argparser():
 class FlagArg(Flag):
 	@classmethod
 	def _from_arg_str(cls, s: str) -> Flag:
-		value = cls(0)
 		name_map = {str(f): f for f in cls}
+		zero = cls(0)
+		if zero.name is not None:
+			name_map[str(zero)] = zero
 		names = [n for n in s.split(',') if n]
+		value = cls(0)
 		for name in names:
 			try:
 				value = value | name_map[name]
@@ -54,10 +57,9 @@ class FlagArg(Flag):
 		return value
 
 	def __str__(self):
-		if self.name is not None:
-			return self.name.lower()
-		members, other = _decompose(self.__class__, self.value)
-		return ','.join([str(m.name or m.value).lower() for m in members])
+		if len(self) == 0:
+			return str(self.name or self.value).lower()
+		return ','.join([str(m.name or m.value).lower() for m in self])
 
 class FlagAction(argparse._StoreAction):
 	def __init__(self, *args, type=None, **kwargs):

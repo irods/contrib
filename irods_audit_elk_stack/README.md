@@ -10,11 +10,11 @@ While some effort has been taken to ensure this container lives up to certain st
 
 The express purpose of this container is to demonstrate the audit rule engine plugin, not to serve as an example of a properly configured ELK stack for use in production environments.
 
-Case in point: Elasticstack security is explicitly disabled, and the Python script standing in for Logstash was not written with performance or resilience in mind.
+Case in point: Elasticsearch security is explicitly disabled, and the Python script standing in for Logstash was not written with performance or resilience in mind.
 
 ## Container Overview
 
-This Ubuntu Focal-based container contains Elasticsearch 8, Kibana 8, RabbitMQ (with AMQP 1.0 plugin and management plugin), and a Python daemon that was specifically written for this demonstration to stand in for an AMQP 1.0-capable Logstash.
+This Ubuntu Noble-based container contains Elasticsearch 8, Kibana 8, RabbitMQ (with AMQP 1.0 plugin and management plugin), and a Python daemon that was specifically written for this demonstration to stand in for an AMQP 1.0-capable Logstash.
 
 RabbitMQ receives AMQP 1.0 messages containing JSON data from the audit plugin. The Python daemon takes the messages from RabbitMQ, does a little type conversion in the JSON, and puts the information in Elasticsearch. Kibana is configured with a sample dashboard that displays extracted metrics from the data in Elasticsearch.
 
@@ -67,21 +67,13 @@ Once all services are running, the entrypoint script runs `ip addr`, which allow
 
 ### JVM
 
-The JDK/JRE used in this container is [Temurin](https://adoptium.net/temurin) 17 with the Hotspot JVM.
+The JDK/JRE used in this container is the distro-provided headless OpenJDK 17 JRE.
 
 The decision not to use Elasticsearch's bundled JDK/JRE was made for two reasons:
 - To de-bloat the container image. Having multiple JDK/JRE installations uses a lot of space.
 - To ensure everything uses the same JDK/JRE installation.
 
-Temurin was chosen over the distro-provided JDK/JRE for a couple of reasons:
-- The Hotspot AdoptOpenJDK flavor of JVM handles memory pressure very well.
-- The AdoptOpenJDK flavors of JVM work well in containers.
-
-Instead of using the [Eclipse-provided Focal-based Temurin 17 docker image](https://hub.docker.com/_/eclipse-temurin?tab=tags&page=1&name=17-jre-focal) <sub>[[Dockerfile](https://github.com/adoptium/containers/blob/main/17/jre/ubuntu/focal/Dockerfile.releases.full)]</sub> for our base, we use the JDK[^1] debian package from [Adoptium's apt repository](https://adoptium.net/installation/linux#_deb_installation_on_debian_or_ubuntu), as the JDK/JRE in the Eclipse-provided containers is not set up to work properly with [Ubuntu/Debian's `java-common` system](https://manpages.debian.org/buster/java-common/update-java-alternatives.8.en.html).
-
 `dpkg` is configured to drop includes, manpages, source zips, and samples from this package, so they are not installed in the container.
-
-[^1]: At present, the full JDK is installed (minus the dpkg excludes). We are investigating using `jlink` to construct a JRE that includes only the components we need for the demonstration.
 
 ### RabbitMQ
 
@@ -110,7 +102,7 @@ Compared to other `init.d` script implementations for Kibana (and the systemd un
 
 ### Logstash Stand-In Python Script
 
-We have written a Python script that uses [Qpid Proton](http://web.archive.org/web/20130717085741/http://qpid.apache.org/releases/qpid-0.22/messaging-api/python/api/index.html) to pull AMQP 1.0 messages from RabbitMQ, perform a few transformations on the message (see the following subsection and the script itself for more info on this), and then push the data to Elasticsearch.
+We have written a Python script that uses [Qpid Proton](https://qpid.apache.org/releases/qpid-proton-0.37.0/proton/python/docs/index.html) to pull AMQP 1.0 messages from RabbitMQ, perform a few transformations on the message (see the following subsection and the script itself for more info on this), and then push the data to Elasticsearch.
 
 The `init.d` script that daemonizes this script is based on the `init.d` script provided by the Elasticsearch 7 packages.
 
@@ -118,15 +110,13 @@ The `init.d` script that daemonizes this script is based on the `init.d` script 
 
 Previously, we used Logstash to move data from RabbitMQ to Elasticsearch. This worked well enough for demonstration purposes before 4.3.0 was released, but the fact that it worked *at all* was pure coincidence.  
 
-The iRODS audit rule engine plugin uses [Qpid Proton](https://qpid.apache.org/releases/qpid-proton-0.36.0/proton/cpp/api/index.html) to send [AMQP 1.0](https://www.amqp.org/specification/1.0/amqp-org-download) messages to RabbitMQ, and these messages *remain* in AMQP 1.0 format in the message queue. Logstash would connect to RabbitMQ as an [AMQP 0-9-1](https://www.amqp.org/specification/0-9-1/amqp-org-download) client using the [RabbitMQ input plugin](https://www.elastic.co/guide/en/logstash/current/plugins-inputs-rabbitmq.html) and retrieve these messages. [RabbitMQ is able to convert *some* AMQP 1.0 messages into AMQP 0-9-1](https://github.com/rabbitmq/rabbitmq-server/tree/v3.10.6/deps/rabbitmq_amqp1_0#interoperability-with-amqp-0-9-1) for AMQP 0-9-1 clients, but most are just tagged with `amqp-1.0` in the `type` field of `basic.properties` and passed through otherwise unchanged. As such, the AMQP 1.0 headers are still present in the message as retrieved by Logstash. Since Logstash does not speak AMQP 1.0, this was effectively garbage at the beginning of every message. We previously[^2] had [a workaround](https://github.com/irods/irods_rule_engine_plugin_audit_amqp/commit/3127b3d676d394b2b9bfdad6467d24317a6951c6) for this where we would use a [Logstash Ruby filter](https://www.elastic.co/guide/en/logstash/current/plugins-filters-ruby.html) to search for `__BEGIN_JSON__` and `__END_JSON__` tokens in the textual content of the message in order to extract the data. However, this only worked when the AMQP 1.0 header happened to be valid UTF-8 that would not trip up Ruby's regular expression engine. Starting with iRODS 4.3.0, these headers would *always* cause the filter to fail.
-
-[^2]: At time of writing, the audit plugin still inserts the `__BEGIN_JSON__` and `__END_JSON__` tokens.
+The iRODS audit rule engine plugin uses [Qpid Proton](https://qpid.apache.org/releases/qpid-proton-0.36.0/proton/cpp/api/index.html) to send [AMQP 1.0](https://www.amqp.org/specification/1.0/amqp-org-download) messages to RabbitMQ, and these messages *remain* in AMQP 1.0 format in the message queue. Logstash would connect to RabbitMQ as an [AMQP 0-9-1](https://www.amqp.org/specification/0-9-1/amqp-org-download) client using the [RabbitMQ input plugin](https://www.elastic.co/guide/en/logstash/current/plugins-inputs-rabbitmq.html) and retrieve these messages. [RabbitMQ is able to convert *some* AMQP 1.0 messages into AMQP 0-9-1](https://github.com/rabbitmq/rabbitmq-server/tree/v3.10.6/deps/rabbitmq_amqp1_0#interoperability-with-amqp-0-9-1) for AMQP 0-9-1 clients, but most are just tagged with `amqp-1.0` in the `type` field of `basic.properties` and passed through otherwise unchanged. As such, the AMQP 1.0 headers are still present in the message as retrieved by Logstash. Since Logstash does not speak AMQP 1.0, this was effectively garbage at the beginning of every message. We previously had [a workaround](https://github.com/irods/irods_rule_engine_plugin_audit_amqp/commit/3127b3d676d394b2b9bfdad6467d24317a6951c6) for this where we would use a [Logstash Ruby filter](https://www.elastic.co/guide/en/logstash/current/plugins-filters-ruby.html) to search for `__BEGIN_JSON__` and `__END_JSON__` tokens in the textual content of the message in order to extract the data. However, this only worked when the AMQP 1.0 header happened to be valid UTF-8 that would not trip up Ruby's regular expression engine. Starting with iRODS 4.3.0, these headers would *always* cause the filter to fail.
 
 ## Updating This Container
 
 ### General Updates
 
-Other than the Ubuntu release itself and the major versions for Temurin, Elasticsearch, and Kibana, the Dockerfile does not specify specific versions of software to be used; therefore, packages can be updated to their latest versions by simply rebuilding the docker image without cache.
+Other than the Ubuntu release itself and the major versions for OpenJDK, Elasticsearch, and Kibana, the Dockerfile does not specify specific versions of software to be used; therefore, packages can be updated to their latest versions by simply rebuilding the docker image without cache.
 
 ### Updating to a new Ubuntu release
 
@@ -134,11 +124,9 @@ Assuming the desired version of Ubuntu introduces no breaking changes and is sup
 
 When updating the Dockerfile, please only use LTS Ubuntu releases, as non-LTS releases are unlikely to have support from third-party apt repositories.
 
-### Updating Java to a new major release
+### Updating Java to a new major release (or switching to a different flavor)
 
-The flavor and major version of Java can be specified at image build-time with the `java_ver`, `java_vendor`, and `java_dist` arguments. (See the Dockerfile for more info.)
-
-When updating the Dockerfile, please only use LTS Java versions, as minor ElasticSearch releases will sometimes drop support for older non-LTS Java versions.
+The Java package can be changed in the Dockerfile. Take care to update the `JAVA_HOME` variable when doing so.
 
 ### Updating Elasticsearch and Kibana to a new major release
 

@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.2
+# syntax=docker/dockerfile:1.7
 #
 # Build Audit Stack for iRODS Monitoring via Audit Plugin
 #
@@ -75,9 +75,18 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 RUN echo "ES_JAVA_HOME=\"${ES_JAVA_HOME}\"" >> /etc/default/elasticsearch
 
 # Install RabbitMQ
-ADD https://packagecloud.io/rabbitmq/rabbitmq-server/gpgkey /usr/share/keyrings/rabbitmq_rabbitmq-server.asc
-RUN gpg --dearmor -o /usr/share/keyrings/rabbitmq_rabbitmq-server.gpg /usr/share/keyrings/rabbitmq_rabbitmq-server.asc && \
-    echo "deb [signed-by=/usr/share/keyrings/rabbitmq_rabbitmq-server.gpg] https://packagecloud.io/rabbitmq/rabbitmq-server/ubuntu/ $(awk -F= '/^VERSION_CODENAME/{print$2}' /etc/os-release) main" | tee /etc/apt/sources.list.d/rabbitmq_rabbitmq-server.list
+# The recommended "November Rain" package repos don't yet have rabbitmq packages for noble,
+# but they are present on the cloudsmith repo proper and on the old packagecloud repo.
+ADD https://packagecloud.io/rabbitmq/rabbitmq-server/gpgkey /usr/share/keyrings/rabbitmq-packagecloud.asc
+ADD https://github.com/rabbitmq/signing-keys/releases/download/3.0/cloudsmith.rabbitmq-server.9F4587F226208342.key /usr/share/keyrings/rabbitmq-cloudsmith.asc
+ADD https://github.com/rabbitmq/signing-keys/releases/download/3.0/cloudsmith.rabbitmq-erlang.E495BB49CC4BBE5B.key /usr/share/keyrings/erlang-cloudsmith.asc
+RUN gpg --dearmor -o /usr/share/keyrings/rabbitmq-packagecloud.gpg /usr/share/keyrings/rabbitmq-packagecloud.asc && \
+    gpg --dearmor -o /usr/share/keyrings/rabbitmq-cloudsmith.gpg /usr/share/keyrings/rabbitmq-cloudsmith.asc && \
+    gpg --dearmor -o /usr/share/keyrings/erlang-cloudsmith.gpg /usr/share/keyrings/erlang-cloudsmith.asc && \
+    echo "deb [signed-by=/usr/share/keyrings/rabbitmq-packagecloud.gpg] https://packagecloud.io/rabbitmq/rabbitmq-server/ubuntu/ $(awk -F= '/^VERSION_CODENAME/{print$2}' /etc/os-release) main" | tee /etc/apt/sources.list.d/rabbitmq.list && \
+    echo "deb [signed-by=/usr/share/keyrings/rabbitmq-cloudsmith.gpg] https://dl.cloudsmith.io/public/rabbitmq/rabbitmq-server/deb/ubuntu $(awk -F= '/^VERSION_CODENAME/{print$2}' /etc/os-release) main" | tee -a /etc/apt/sources.list.d/rabbitmq.list && \
+    echo "deb [signed-by=/usr/share/keyrings/erlang-cloudsmith.gpg] https://ppa1.novemberain.com/rabbitmq/rabbitmq-erlang/deb/ubuntu $(awk -F= '/^VERSION_CODENAME/{print$2}' /etc/os-release) main" | tee /etc/apt/sources.list.d/erlang.list && \
+    echo "deb [signed-by=/usr/share/keyrings/erlang-cloudsmith.gpg] https://ppa2.novemberain.com/rabbitmq/rabbitmq-erlang/deb/ubuntu $(awk -F= '/^VERSION_CODENAME/{print$2}' /etc/os-release) main" | tee -a /etc/apt/sources.list.d/erlang.list
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && \

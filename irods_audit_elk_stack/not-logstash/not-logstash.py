@@ -121,7 +121,11 @@ class ELKReader(MessagingHandler):
 
 		self.workaround_tokens(msg)
 
-		body_obj = json.loads(msg.body)
+		try:
+			body_obj = json.loads(msg.body)
+		except json.JSONDecodeError:
+			self.logger.exception('Failed to decode JSON from AMQP message. body(raw):\n%s', pformat(msg.body))
+			return
 
 		self.workaround_ts(body_obj)
 		self.workaround_typing(body_obj)

@@ -2,15 +2,15 @@
  * iping - App that "pings" an iRODS server. 
 */
 
-#include "rodsClient.h"
-#include "parseCommandLine.h"
-#include "rodsPath.h"
-#include "lsUtil.h"
+#include <irods/rodsClient.h>
+#include <irods/parseCommandLine.h>
+#include <irods/rodsPath.h>
+#include <irods/lsUtil.h>
 
 
-#include "irods_buffer_encryption.hpp"
-#include "irods_client_api_table.hpp"
-#include "irods_pack_table.hpp"
+#include <irods/irods_buffer_encryption.hpp>
+#include <irods/irods_client_api_table.hpp>
+#include <irods/irods_pack_table.hpp>
 #include "boost/lexical_cast.hpp"
 
 #include <string>
@@ -32,8 +32,8 @@ int main( int argc, char **argv ) {
 
     signal( SIGPIPE, SIG_IGN );
 
-    char *rodsHost = "localhost";
-    char *rodsPortStr = "1247";
+    char const *rodsHost = "localhost";
+    char const *rodsPortStr = "1247";
     int c;
 
     while ((c = getopt(argc, argv, "h:p:")) != -1) {
